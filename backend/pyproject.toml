@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".venv", "__pycache__", "build", "dist"]
+select = ["E", "F", "W", "C", "Q"]
+
+[tool.black]
+line-length = 100
+target-version = "py312"
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+files = ["backend/app"]

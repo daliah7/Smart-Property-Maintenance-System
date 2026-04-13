@@ -1,0 +1,29 @@
+name: E2E Tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Compose
+        run: docker compose version
+      - name: Build and start services
+        run: |
+          docker compose up -d --build db backend frontend
+          sleep 15
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - name: Install Playwright and run tests
+        run: |
+          cd frontend
+          npm install
+          npx playwright install --with-deps
+          npx playwright test -c ../tests/e2e/playwright.config.ts
+      - name: Tear down Docker Compose
+        if: always()
+        run: docker compose down
