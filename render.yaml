@@ -13,7 +13,7 @@ services:
           name: smart-property-maintenance-db
           property: connectionString
       - key: CORS_ORIGINS
-        value: https://smart-property-maintenance-frontend.onrender.com
+        value: https://daliah7.github.io,https://smart-property-maintenance-frontend.onrender.com
 
 databases:
   - name: smart-property-maintenance-db
