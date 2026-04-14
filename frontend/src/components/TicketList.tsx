@@ -2,6 +2,19 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { Ticket, TicketPriority } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
+const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+const PRIORITY_DOT: Record<TicketPriority, string> = { HIGH: "🔴", MEDIUM: "🟡", LOW: "🟢" };
+
+function getSLABadge(ticket: Ticket): { label: string; cls: string } | null {
+  if (ticket.status === "RESOLVED" || ticket.status === "CLOSED") return null;
+  const slaH = SLA_HOURS[ticket.priority] ?? 24;
+  const elapsed = (Date.now() - new Date(ticket.created_at).getTime()) / 3600000;
+  const rem = slaH - elapsed;
+  if (rem < 0) return { label: `🔴 ${Math.abs(rem).toFixed(0)}h überfällig`, cls: "sla-badge-exceeded" };
+  if (rem < slaH * 0.2) return { label: `🟡 ${rem.toFixed(1)}h SLA`, cls: "sla-badge-risk" };
+  return null;
+}
+
 interface Props {
   tickets: Ticket[];
   selectedTicketId?: number;
@@ -11,20 +24,7 @@ interface Props {
   loading?: boolean;
 }
 
-const PRIORITY_DOT: Record<TicketPriority, string> = {
-  HIGH:   "🔴",
-  MEDIUM: "🟡",
-  LOW:    "🟢",
-};
-
-export function TicketList({
-  tickets,
-  selectedTicketId,
-  onSelectTicket,
-  onFilterChange,
-  filter,
-  loading = false,
-}: Props) {
+export function TicketList({ tickets, selectedTicketId, onSelectTicket, onFilterChange, filter, loading = false }: Props) {
   const { t, tf } = useLanguage();
 
   function timeAgo(iso: string): string {
@@ -54,59 +54,54 @@ export function TicketList({
           {t("listTitle")}{" "}
           <span className="ticket-count">{tickets.length > 0 ? `(${tickets.length})` : ""}</span>
         </h2>
-        <select
-          className="filter-select"
-          value={filter}
-          onChange={(e) => onFilterChange(e.target.value)}
-          aria-label={t("filterAll")}
-        >
-          {filterOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
+        <select className="filter-select" value={filter} onChange={e => onFilterChange(e.target.value)} aria-label={t("filterAll")}>
+          {filterOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
       </div>
 
       {loading ? (
         <div className="ticket-list-grid">
-          {[1, 2, 3].map((n) => <div key={n} className="skeleton skeleton-row" />)}
+          {[1, 2, 3].map(n => <div key={n} className="skeleton skeleton-row" />)}
         </div>
       ) : tickets.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">{t("emptyIcon")}</div>
           <div className="empty-state-text">
-            {filter
-              ? tf("emptyFiltered", { status: filter })
-              : t("emptyAll")}
+            {filter ? tf("emptyFiltered", { status: filter }) : t("emptyAll")}
           </div>
         </div>
       ) : (
         <div className="ticket-list-grid">
-          {tickets.map((ticket) => (
-            <button
-              key={ticket.id}
-              className={`ticket-item ${selectedTicketId === ticket.id ? "selected" : ""}`}
-              onClick={() => onSelectTicket(ticket)}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="ticket-item-title">
-                  <span title={ticket.priority} style={{ marginRight: 6 }}>
-                    {PRIORITY_DOT[ticket.priority] ?? "🟡"}
-                  </span>
-                  {ticket.title}
+          {tickets.map(ticket => {
+            const slaBadge = getSLABadge(ticket);
+            return (
+              <button
+                key={ticket.id}
+                className={`ticket-item ${selectedTicketId === ticket.id ? "selected" : ""} ${slaBadge?.cls === "sla-badge-exceeded" ? "ticket-item-escalated" : ""}`}
+                onClick={() => onSelectTicket(ticket)}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="ticket-item-title">
+                    <span title={ticket.priority} style={{ marginRight: 6 }}>
+                      {PRIORITY_DOT[ticket.priority] ?? "🟡"}
+                    </span>
+                    {ticket.title}
+                  </div>
+                  <div className="ticket-item-meta">
+                    <span>{t("metaUnit")} {ticket.unit_id}</span>
+                    <span>·</span>
+                    <span>{timeAgo(ticket.created_at)}</span>
+                    {slaBadge && <span className={`sla-inline-badge ${slaBadge.cls}`}>{slaBadge.label}</span>}
+                  </div>
                 </div>
-                <div className="ticket-item-meta">
-                  <span>{t("metaUnit")} {ticket.unit_id}</span>
-                  <span>·</span>
-                  <span>{timeAgo(ticket.created_at)}</span>
+                <div style={{ flexShrink: 0 }}>
+                  <StatusBadge status={ticket.status} />
                 </div>
-              </div>
-              <div style={{ flexShrink: 0 }}>
-                <StatusBadge status={ticket.status} />
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </div>
       )}
     </section>

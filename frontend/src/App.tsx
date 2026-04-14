@@ -5,23 +5,15 @@ import { TicketDetail } from "./components/TicketDetail";
 import { DashboardPage } from "./components/DashboardPage";
 import { TechniciansPage } from "./components/TechniciansPage";
 import { PropertiesPage } from "./components/PropertiesPage";
+import { AnalyticsPage } from "./components/AnalyticsPage";
+import { TenantPortal } from "./components/TenantPortal";
+import { AIChat } from "./components/AIChat";
 import { useLanguage } from "./i18n/LanguageContext";
 import type { Invoice, Property, Ticket, Technician, TicketCreatePayload, Tenant, Unit } from "./types";
 import {
-  assignTicket,
-  autoAssignTicket,
-  createInvoice,
-  createTicket,
-  fetchInvoiceByTicket,
-  fetchProperties,
-  fetchTechnicians,
-  fetchTickets,
-  fetchTenants,
-  fetchUnits,
-  closeTicket,
-  payInvoice,
-  resolveTicket,
-  startTicket,
+  assignTicket, autoAssignTicket, createInvoice, createTicket,
+  fetchInvoiceByTicket, fetchProperties, fetchTechnicians, fetchTickets,
+  fetchTenants, fetchUnits, closeTicket, payInvoice, resolveTicket, startTicket,
 } from "./api";
 
 /* ─── Toast ─── */
@@ -34,13 +26,13 @@ function useToasts() {
   const timers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   const dismiss = useCallback((id: number) => {
-    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 220);
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 220);
   }, []);
 
   const push = useCallback((type: ToastType, message: string) => {
     const id = ++toastCounter;
-    setToasts((prev) => [...prev, { id, type, message }]);
+    setToasts(prev => [...prev, { id, type, message }]);
     const timer = setTimeout(() => dismiss(id), 4000);
     timers.current.set(id, timer);
     return id;
@@ -51,17 +43,31 @@ function useToasts() {
 
 /* ─── Theme ─── */
 function useTheme() {
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("spms-theme") as "dark" | "light") ?? "dark";
-  });
-
+  const [theme, setTheme] = useState<"dark" | "light">(() =>
+    (localStorage.getItem("spms-theme") as "dark" | "light") ?? "dark"
+  );
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("spms-theme", theme);
   }, [theme]);
-
   const toggle = () => setTheme(t => t === "dark" ? "light" : "dark");
   return { theme, toggle };
+}
+
+/* ─── SLA helpers for notification bell ─── */
+const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+
+function countSLAIssues(tickets: Ticket[]) {
+  let escalated = 0, atRisk = 0;
+  const now = Date.now();
+  for (const t of tickets) {
+    if (t.status === "RESOLVED" || t.status === "CLOSED") continue;
+    const slaH = SLA_HOURS[t.priority] ?? 24;
+    const elapsed = (now - new Date(t.created_at).getTime()) / 3600000;
+    if (elapsed > slaH) escalated++;
+    else if (elapsed > slaH * 0.8) atRisk++;
+  }
+  return { escalated, atRisk };
 }
 
 /* ─── Language Switcher ─── */
@@ -69,36 +75,65 @@ function LangSwitcher() {
   const { lang, setLang } = useLanguage();
   return (
     <div className="lang-switcher" role="group" aria-label="Language / Sprache">
-      <button className={`lang-btn ${lang === "de" ? "active" : ""}`} onClick={() => setLang("de")} aria-pressed={lang === "de"}>
-        🇩🇪 DE
+      <button className={`lang-btn ${lang === "de" ? "active" : ""}`} onClick={() => setLang("de")} aria-pressed={lang === "de"}>🇩🇪 DE</button>
+      <button className={`lang-btn ${lang === "en" ? "active" : ""}`} onClick={() => setLang("en")} aria-pressed={lang === "en"}>🇬🇧 EN</button>
+    </div>
+  );
+}
+
+/* ─── Notification Bell ─── */
+function NotificationBell({ tickets }: { tickets: Ticket[] }) {
+  const { t, tf } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const { escalated, atRisk } = countSLAIssues(tickets);
+  const total = escalated + atRisk;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const newToday = tickets.filter(tk => new Date(tk.created_at) >= today).length;
+
+  return (
+    <div className="notif-wrapper">
+      <button className="notif-bell" onClick={() => setOpen(o => !o)} aria-label={t("notifTitle")}>
+        🔔
+        {total > 0 && <span className="notif-badge">{total}</span>}
       </button>
-      <button className={`lang-btn ${lang === "en" ? "active" : ""}`} onClick={() => setLang("en")} aria-pressed={lang === "en"}>
-        🇬🇧 EN
-      </button>
+      {open && (
+        <div className="notif-dropdown">
+          <div className="notif-header">{t("notifTitle")}</div>
+          {total === 0 && newToday === 0 ? (
+            <div className="notif-item notif-none">{t("notifNone")}</div>
+          ) : (
+            <>
+              {escalated > 0 && <div className="notif-item notif-escalated">🚨 {tf("notifEscalated", { n: escalated })}</div>}
+              {atRisk > 0 && <div className="notif-item notif-risk">⚠️ {tf("notifAtRisk", { n: atRisk })}</div>}
+              {newToday > 0 && <div className="notif-item notif-new">🆕 {tf("notifNew", { n: newToday })}</div>}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ─── Navigation ─── */
-type Page = "dashboard" | "tickets" | "technicians" | "properties";
+type Page = "dashboard" | "tickets" | "analytics" | "portal" | "technicians" | "properties";
 
 function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) => void }) {
   const { t } = useLanguage();
   const tabs: { key: Page; label: string; icon: string }[] = [
-    { key: "dashboard",    label: t("navDashboard"),    icon: "◈" },
-    { key: "tickets",      label: t("navTickets"),      icon: "◎" },
-    { key: "technicians",  label: t("navTechnicians"),  icon: "◉" },
-    { key: "properties",   label: t("navProperties"),   icon: "⊞" },
+    { key: "dashboard",   label: t("navDashboard"),   icon: "◈" },
+    { key: "tickets",     label: t("navTickets"),     icon: "◎" },
+    { key: "analytics",   label: t("navAnalytics"),   icon: "◆" },
+    { key: "portal",      label: t("navPortal"),      icon: "🏠" },
+    { key: "technicians", label: t("navTechnicians"), icon: "◉" },
+    { key: "properties",  label: t("navProperties"),  icon: "⊞" },
   ];
   return (
     <nav className="nav-bar" aria-label="Main navigation">
       {tabs.map(tab => (
-        <button
-          key={tab.key}
+        <button key={tab.key}
           className={`nav-tab ${active === tab.key ? "active" : ""}`}
           onClick={() => onNavigate(tab.key)}
-          aria-current={active === tab.key ? "page" : undefined}
-        >
+          aria-current={active === tab.key ? "page" : undefined}>
           <span className="nav-tab-icon">{tab.icon}</span>
           {tab.label}
         </button>
@@ -112,7 +147,7 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
   if (toasts.length === 0) return null;
   return (
     <div className="toast-container" role="region" aria-label="Notifications">
-      {toasts.map((t) => (
+      {toasts.map(t => (
         <div key={t.id} className={`toast toast-${t.type} ${t.exiting ? "toast-exit" : ""}`} role="alert">
           <span className="toast-icon">{t.type === "success" ? "✓" : "✕"}</span>
           <span className="toast-message">{t.message}</span>
@@ -128,16 +163,16 @@ function App() {
   const { t, tf } = useLanguage();
   const { theme, toggle: toggleTheme } = useTheme();
 
-  const [activePage, setActivePage]             = useState<Page>("dashboard");
-  const [tickets, setTickets]                   = useState<Ticket[]>([]);
-  const [technicians, setTechnicians]           = useState<Technician[]>([]);
-  const [units, setUnits]                       = useState<Unit[]>([]);
-  const [tenants, setTenants]                   = useState<Tenant[]>([]);
-  const [properties, setProperties]             = useState<Property[]>([]);
-  const [selectedTicket, setSelectedTicket]     = useState<Ticket | undefined>();
-  const [filter, setFilter]                     = useState("");
-  const [invoice, setInvoice]                   = useState<Invoice | undefined>();
-  const [loading, setLoading]                   = useState(true);
+  const [activePage, setActivePage]         = useState<Page>("dashboard");
+  const [tickets, setTickets]               = useState<Ticket[]>([]);
+  const [technicians, setTechnicians]       = useState<Technician[]>([]);
+  const [units, setUnits]                   = useState<Unit[]>([]);
+  const [tenants, setTenants]               = useState<Tenant[]>([]);
+  const [properties, setProperties]         = useState<Property[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | undefined>();
+  const [filter, setFilter]                 = useState("");
+  const [invoice, setInvoice]               = useState<Invoice | undefined>();
+  const [loading, setLoading]               = useState(true);
 
   const { toasts, push, dismiss } = useToasts();
 
@@ -145,18 +180,15 @@ function App() {
     try {
       const items = await fetchTickets(status || undefined);
       setTickets(items);
-      setSelectedTicket((prev) => (prev ? items.find((i) => i.id === prev.id) : undefined));
+      setSelectedTicket(prev => prev ? items.find(i => i.id === prev.id) : undefined);
     } catch (err) {
       push("error", `${t("toastTicketsLoadError")}: ${err}`);
     }
   }, [push, t]);
 
   const loadInvoiceForTicket = async (ticketId: number) => {
-    try {
-      setInvoice(await fetchInvoiceByTicket(ticketId));
-    } catch {
-      setInvoice(undefined);
-    }
+    try { setInvoice(await fetchInvoiceByTicket(ticketId)); }
+    catch { setInvoice(undefined); }
   };
 
   useEffect(() => {
@@ -167,9 +199,7 @@ function App() {
       fetchUnits().then(setUnits),
       fetchTenants().then(setTenants),
       fetchProperties().then(setProperties),
-    ])
-      .catch((err) => push("error", String(err)))
-      .finally(() => setLoading(false));
+    ]).catch(err => push("error", String(err))).finally(() => setLoading(false));
   }, [filter]);
 
   const handleCreateTicket = async (payload: TicketCreatePayload) => {
@@ -200,12 +230,8 @@ function App() {
   const handleClose      = (id: number) => performAction(() => closeTicket(id),   t("toastClosed"));
 
   const handlePayInvoice = async (invoiceId: number) => {
-    try {
-      setInvoice(await payInvoice(invoiceId));
-      push("success", t("toastInvoicePaid"));
-    } catch (err) {
-      push("error", `${t("toastActionError")}: ${err}`);
-    }
+    try { setInvoice(await payInvoice(invoiceId)); push("success", t("toastInvoicePaid")); }
+    catch (err) { push("error", `${t("toastActionError")}: ${err}`); }
   };
 
   const handleCreateInvoice = async (ticketId: number, amount: number) => {
@@ -220,19 +246,15 @@ function App() {
   };
 
   const PRIORITY_ORDER: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-
   const visibleTickets = useMemo(
-    () =>
-      [...tickets].sort((a, b) => {
-        const pa = PRIORITY_ORDER[a.priority] ?? 1;
-        const pb = PRIORITY_ORDER[b.priority] ?? 1;
-        if (pa !== pb) return pa - pb;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      }),
+    () => [...tickets].sort((a, b) => {
+      const pa = PRIORITY_ORDER[a.priority] ?? 1, pb = PRIORITY_ORDER[b.priority] ?? 1;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }),
     [tickets],
   );
 
-  /* Navigate to tickets with optional filter */
   const handleNavigateToTickets = (filterValue: string) => {
     setFilter(filterValue);
     setActivePage("tickets");
@@ -249,12 +271,10 @@ function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div className="header-badge">{t("headerBadge")}</div>
-            <button
-              className="theme-toggle"
-              onClick={toggleTheme}
+            <NotificationBell tickets={tickets} />
+            <button className="theme-toggle" onClick={toggleTheme}
               aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              title={theme === "dark" ? "Light mode" : "Dark mode"}
-            >
+              title={theme === "dark" ? "Light mode" : "Dark mode"}>
               {theme === "dark" ? "☀️" : "🌙"}
             </button>
             <LangSwitcher />
@@ -270,43 +290,54 @@ function App() {
             tickets={tickets}
             technicians={technicians}
             onNavigateTickets={handleNavigateToTickets}
+            onNavigateAnalytics={() => setActivePage("analytics")}
           />
         )}
 
         {activePage === "tickets" && (
-          <>
-            <div className="layout-grid">
-              <div className="column-left">
-                <TicketForm units={units} tenants={tenants} onCreate={handleCreateTicket} />
-                <TicketList
-                  tickets={visibleTickets}
-                  selectedTicketId={selectedTicket?.id}
-                  loading={loading}
-                  onSelectTicket={(ticket) => {
-                    setSelectedTicket(ticket);
-                    setInvoice(undefined);
-                    loadInvoiceForTicket(ticket.id);
-                  }}
-                  onFilterChange={setFilter}
-                  filter={filter}
-                />
-              </div>
-              <div className="column-right">
-                <TicketDetail
-                  ticket={selectedTicket}
-                  technicians={technicians}
-                  onAutoAssign={handleAutoAssign}
-                  onAssign={handleAssign}
-                  onStart={handleStart}
-                  onResolve={handleResolve}
-                  onClose={handleClose}
-                  onCreateInvoice={handleCreateInvoice}
-                  onPayInvoice={handlePayInvoice}
-                  invoice={invoice}
-                />
-              </div>
+          <div className="layout-grid">
+            <div className="column-left">
+              <TicketForm units={units} tenants={tenants} onCreate={handleCreateTicket} />
+              <TicketList
+                tickets={visibleTickets}
+                selectedTicketId={selectedTicket?.id}
+                loading={loading}
+                onSelectTicket={ticket => { setSelectedTicket(ticket); setInvoice(undefined); loadInvoiceForTicket(ticket.id); }}
+                onFilterChange={setFilter}
+                filter={filter}
+              />
             </div>
-          </>
+            <div className="column-right">
+              <TicketDetail
+                ticket={selectedTicket}
+                technicians={technicians}
+                onAutoAssign={handleAutoAssign}
+                onAssign={handleAssign}
+                onStart={handleStart}
+                onResolve={handleResolve}
+                onClose={handleClose}
+                onCreateInvoice={handleCreateInvoice}
+                onPayInvoice={handlePayInvoice}
+                invoice={invoice}
+              />
+            </div>
+          </div>
+        )}
+
+        {activePage === "analytics" && <AnalyticsPage />}
+
+        {activePage === "portal" && (
+          <TenantPortal
+            units={units}
+            tickets={tickets}
+            onTicketCreated={() => loadTickets(filter || undefined)}
+            onShowTicket={ticket => {
+              setSelectedTicket(ticket);
+              setInvoice(undefined);
+              loadInvoiceForTicket(ticket.id);
+              setActivePage("tickets");
+            }}
+          />
         )}
 
         {activePage === "technicians" && (
@@ -314,16 +345,12 @@ function App() {
         )}
 
         {activePage === "properties" && (
-          <PropertiesPage
-            properties={properties}
-            units={units}
-            tenants={tenants}
-            tickets={tickets}
-          />
+          <PropertiesPage properties={properties} units={units} tenants={tenants} tickets={tickets} />
         )}
       </main>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      <AIChat />
     </>
   );
 }

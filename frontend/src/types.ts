@@ -55,3 +55,38 @@ export interface TicketCreatePayload {
   tenant_id?: number;
   priority?: TicketPriority;
 }
+
+export interface TicketHistory {
+  id: number;
+  ticket_id: number;
+  event: string;
+  note?: string;
+  created_at: string;
+}
+
+export interface PropertyMetric {
+  property_name: string;
+  ticket_count: number;
+  total_cost: number;
+}
+
+export interface MonthlyTrend {
+  month: string;
+  count: number;
+}
+
+export interface AnalyticsData {
+  avg_resolution_hours: number;
+  sla_compliance_pct: number;
+  total_cost: number;
+  avg_cost_per_ticket: number;
+  tickets_per_property: PropertyMetric[];
+  monthly_trend: MonthlyTrend[];
+  escalated_count: number;
+  at_risk_count: number;
+}
+
+export interface AIMessage {
+  role: "user" | "assistant";
+  content: string;
+}

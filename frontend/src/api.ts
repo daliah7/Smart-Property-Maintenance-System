@@ -1,4 +1,4 @@
-import { Invoice, Property, Ticket, TicketCreatePayload, Technician, Tenant, Unit } from "./types";
+import type { AnalyticsData, Invoice, Property, Ticket, TicketCreatePayload, TicketHistory, Technician, Tenant, Unit } from "./types";
 
 const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -22,13 +22,21 @@ export const fetchTicket = (ticketId: number) => request<Ticket>(`/tickets/${tic
 export const fetchInvoiceByTicket = (ticketId: number) =>
   request<Invoice>(`/tickets/${ticketId}/invoice`);
 
+export const fetchTicketHistory = (ticketId: number) =>
+  request<TicketHistory[]>(`/tickets/${ticketId}/history`);
+
 export const fetchProperties = () => request<Property[]>("/properties");
-
 export const fetchTechnicians = () => request<Technician[]>("/technicians");
-
 export const fetchUnits = () => request<Unit[]>("/units");
-
 export const fetchTenants = () => request<Tenant[]>("/tenants");
+
+export const fetchAnalytics = () => request<AnalyticsData>("/analytics");
+
+export const sendAIChat = (message: string) =>
+  request<{ reply: string }>("/ai/chat", {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
 
 export const createTicket = (payload: TicketCreatePayload) =>
   request<Ticket>("/tickets", { method: "POST", body: JSON.stringify(payload) });
@@ -39,23 +47,13 @@ export const assignTicket = (ticketId: number, technicianId: number) =>
     body: JSON.stringify({ technician_id: technicianId }),
   });
 
-export const startTicket = (ticketId: number) =>
-  request<Ticket>(`/tickets/${ticketId}/start`, { method: "PATCH" });
-
-export const resolveTicket = (ticketId: number) =>
-  request<Ticket>(`/tickets/${ticketId}/resolve`, { method: "PATCH" });
-
-export const closeTicket = (ticketId: number) =>
-  request<Ticket>(`/tickets/${ticketId}/close`, { method: "PATCH" });
+export const startTicket    = (ticketId: number) => request<Ticket>(`/tickets/${ticketId}/start`,   { method: "PATCH" });
+export const resolveTicket  = (ticketId: number) => request<Ticket>(`/tickets/${ticketId}/resolve`, { method: "PATCH" });
+export const closeTicket    = (ticketId: number) => request<Ticket>(`/tickets/${ticketId}/close`,   { method: "PATCH" });
+export const autoAssignTicket = (ticketId: number) => request<Ticket>(`/tickets/${ticketId}/auto-assign`, { method: "PATCH" });
 
 export const createInvoice = (ticketId: number, amount: number) =>
-  request<Invoice>(`/tickets/${ticketId}/invoice`, {
-    method: "POST",
-    body: JSON.stringify({ amount }),
-  });
+  request<Invoice>(`/tickets/${ticketId}/invoice`, { method: "POST", body: JSON.stringify({ amount }) });
 
 export const payInvoice = (invoiceId: number) =>
   request<Invoice>(`/invoices/${invoiceId}/pay`, { method: "PATCH" });
-
-export const autoAssignTicket = (ticketId: number) =>
-  request<Ticket>(`/tickets/${ticketId}/auto-assign`, { method: "PATCH" });

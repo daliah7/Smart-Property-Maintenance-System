@@ -95,6 +95,8 @@ export const translations = {
     // Navigation
     navDashboard: "Dashboard",
     navTickets: "Tickets",
+    navAnalytics: "Analytics",
+    navPortal: "Portal",
     navTechnicians: "Techniker",
     navProperties: "Objekte",
 
@@ -110,6 +112,76 @@ export const translations = {
     dashColDone: "Erledigt",
     dashColTotal: "Gesamt",
     dashNoTickets: "Noch keine Tickets vorhanden.",
+    dashSLATitle: "SLA & Eskalation",
+    dashNoEscalated: "✅ Alle SLAs eingehalten",
+
+    // SLA
+    slaAtRisk: "At Risk",
+    slaExceeded: "Eskaliert",
+    slaOk: "Im SLA",
+    slaHoursLeft: "{h}h verbleibend",
+    slaHoursOver: "{h}h überfällig",
+
+    // Timeline / History
+    timelineTitle: "Ticket-Verlauf",
+    timelineEmpty: "Kein Verlauf verfügbar.",
+    timelineTab: "Verlauf",
+    detailTab: "Details",
+    eventCREATED: "Erstellt",
+    eventASSIGNED: "Zugewiesen",
+    eventSTARTED: "Gestartet",
+    eventRESOLVED: "Erledigt",
+    eventCLOSED: "Geschlossen",
+    eventESCALATED: "Eskaliert",
+
+    // Analytics page
+    analyticsTitle: "Advanced Analytics",
+    analyticsSubtitle: "Tiefgehende Auswertungen und KPIs",
+    analyticsLoading: "Analyse wird geladen…",
+    analyticsError: "Analyse konnte nicht geladen werden.",
+    kpiAvgResolution: "Ø Lösungszeit",
+    kpiSLA: "SLA-Erfüllung",
+    kpiTotalCost: "Gesamtkosten",
+    kpiAvgCost: "Ø Kosten / Ticket",
+    kpiEscalated: "Eskaliert",
+    kpiAtRisk: "At Risk",
+    kpiHours: "Std.",
+    chartTrend: "Ticket-Trend",
+    chartHeatmap: "Tickets pro Objekt",
+    chartCostPerProp: "Kosten pro Objekt",
+    analyticsNoData: "Keine Daten vorhanden.",
+
+    // Tenant Portal
+    portalTitle: "Mieter-Portal",
+    portalSubtitle: "Problem melden & Status verfolgen",
+    portalSelectUnit: "Wohneinheit auswählen",
+    portalCreateTitle: "Problem melden",
+    portalMyTickets: "Meine Meldungen",
+    portalTitleLabel: "Titel / Problembeschreibung",
+    portalTitlePlaceholder: "z.B. Wasserhahn tropft",
+    portalDescLabel: "Details",
+    portalDescPlaceholder: "Beschreiben Sie das Problem genau…",
+    portalSubmit: "Problem einreichen",
+    portalSubmitting: "Wird eingereicht…",
+    portalSuccess: "Ihre Meldung wurde erfolgreich eingereicht.",
+    portalNoTickets: "Noch keine Meldungen für diese Einheit.",
+    portalSelectFirst: "Bitte zuerst eine Einheit auswählen.",
+    portalUnit: "Einheit",
+
+    // AI Assistant
+    aiTitle: "KI-Assistent",
+    aiSubtitle: "Fragen Sie mich über Tickets, Kosten und Auslastung",
+    aiPlaceholder: "z.B. Kritische Tickets anzeigen…",
+    aiSend: "Senden",
+    aiLoading: "Analysiert…",
+    aiWelcome: "Hallo! Ich bin Ihr KI-Assistent. Fragen Sie mich z.B. nach kritischen Tickets, Kosten oder Techniker-Auslastung.",
+
+    // Notifications
+    notifTitle: "Benachrichtigungen",
+    notifEscalated: "{n} eskalierte Tickets",
+    notifAtRisk: "{n} Tickets at risk",
+    notifNew: "{n} neue Tickets heute",
+    notifNone: "Keine neuen Benachrichtigungen",
 
     // Technicians page
     techPageTitle: "Techniker-Übersicht",
@@ -236,6 +308,8 @@ export const translations = {
     // Navigation
     navDashboard: "Dashboard",
     navTickets: "Tickets",
+    navAnalytics: "Analytics",
+    navPortal: "Portal",
     navTechnicians: "Technicians",
     navProperties: "Properties",
 
@@ -251,6 +325,76 @@ export const translations = {
     dashColDone: "Done",
     dashColTotal: "Total",
     dashNoTickets: "No tickets yet.",
+    dashSLATitle: "SLA & Escalation",
+    dashNoEscalated: "✅ All SLAs met",
+
+    // SLA
+    slaAtRisk: "At Risk",
+    slaExceeded: "Escalated",
+    slaOk: "Within SLA",
+    slaHoursLeft: "{h}h remaining",
+    slaHoursOver: "{h}h overdue",
+
+    // Timeline / History
+    timelineTitle: "Ticket History",
+    timelineEmpty: "No history available.",
+    timelineTab: "History",
+    detailTab: "Details",
+    eventCREATED: "Created",
+    eventASSIGNED: "Assigned",
+    eventSTARTED: "Started",
+    eventRESOLVED: "Resolved",
+    eventCLOSED: "Closed",
+    eventESCALATED: "Escalated",
+
+    // Analytics page
+    analyticsTitle: "Advanced Analytics",
+    analyticsSubtitle: "Deep insights and KPIs",
+    analyticsLoading: "Loading analytics…",
+    analyticsError: "Failed to load analytics.",
+    kpiAvgResolution: "Avg. Resolution",
+    kpiSLA: "SLA Compliance",
+    kpiTotalCost: "Total Costs",
+    kpiAvgCost: "Avg. Cost / Ticket",
+    kpiEscalated: "Escalated",
+    kpiAtRisk: "At Risk",
+    kpiHours: "hrs",
+    chartTrend: "Ticket Trend",
+    chartHeatmap: "Tickets per Property",
+    chartCostPerProp: "Cost per Property",
+    analyticsNoData: "No data available.",
+
+    // Tenant Portal
+    portalTitle: "Tenant Portal",
+    portalSubtitle: "Report issues & track status",
+    portalSelectUnit: "Select your unit",
+    portalCreateTitle: "Report Issue",
+    portalMyTickets: "My Reports",
+    portalTitleLabel: "Title / Issue description",
+    portalTitlePlaceholder: "e.g. Leaking faucet",
+    portalDescLabel: "Details",
+    portalDescPlaceholder: "Describe the problem in detail…",
+    portalSubmit: "Submit report",
+    portalSubmitting: "Submitting…",
+    portalSuccess: "Your report has been submitted successfully.",
+    portalNoTickets: "No reports for this unit yet.",
+    portalSelectFirst: "Please select a unit first.",
+    portalUnit: "Unit",
+
+    // AI Assistant
+    aiTitle: "AI Assistant",
+    aiSubtitle: "Ask me about tickets, costs and workload",
+    aiPlaceholder: "e.g. Show critical tickets…",
+    aiSend: "Send",
+    aiLoading: "Analysing…",
+    aiWelcome: "Hello! I'm your AI assistant. Ask me about critical tickets, costs, or technician workload.",
+
+    // Notifications
+    notifTitle: "Notifications",
+    notifEscalated: "{n} escalated tickets",
+    notifAtRisk: "{n} tickets at risk",
+    notifNew: "{n} new tickets today",
+    notifNone: "No new notifications",
 
     // Technicians page
     techPageTitle: "Technician Overview",

@@ -93,6 +93,12 @@ class MaintenanceTicketModel(Base):
     unit = relationship("UnitModel", back_populates="tickets")
     technician = relationship("TechnicianModel", back_populates="tickets")
     invoice = relationship("InvoiceModel", back_populates="ticket", uselist=False)
+    history = relationship(
+        "TicketHistoryModel",
+        back_populates="ticket",
+        cascade="all, delete-orphan",
+        order_by="TicketHistoryModel.created_at",
+    )
 
 
 class InvoiceModel(Base):
@@ -111,3 +117,19 @@ class InvoiceModel(Base):
     paid_at = Column(DateTime(timezone=True), nullable=True)
 
     ticket = relationship("MaintenanceTicketModel", back_populates="invoice")
+
+
+class TicketHistoryModel(Base):
+    __tablename__ = "ticket_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticket_id = Column(Integer, ForeignKey("maintenance_tickets.id"), nullable=False)
+    event = Column(String(50), nullable=False)
+    note = Column(String(300), nullable=True)
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    ticket = relationship("MaintenanceTicketModel", back_populates="history")

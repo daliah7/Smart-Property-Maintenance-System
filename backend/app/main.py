@@ -3,6 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.ai import router as ai_router
+from app.api.v1.analytics import router as analytics_router
 from app.api.v1.invoices import router as invoices_router
 from app.api.v1.properties import router as properties_router
 from app.api.v1.tickets import router as tickets_router
@@ -63,4 +65,14 @@ app.include_router(
     invoices_router,
     prefix=f"{settings.api_prefix}/invoices",
     tags=["invoices"],
+)
+app.include_router(
+    analytics_router,
+    prefix=f"{settings.api_prefix}/analytics",
+    tags=["analytics"],
+)
+app.include_router(
+    ai_router,
+    prefix=f"{settings.api_prefix}/ai",
+    tags=["ai"],
 )
