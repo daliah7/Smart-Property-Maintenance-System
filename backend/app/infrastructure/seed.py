@@ -129,7 +129,7 @@ def seed_demo_data() -> None:
         tech_installat  = TechnicianModel(name="Pierre Maillard",    expertise="Sanitärinstallation Wasserleitung Abfluss Rohr Kanalisation Ventil")
         tech_maurer     = TechnicianModel(name="Giorgio Ferretti",  expertise="Maurer Beton Mauerwerk Risse Abdichtung Keller Fundament")
         tech_haustechnik= TechnicianModel(name="Nicole Amstutz",    expertise="Haustechnik Gebäudetechnik Steuerung Automation Pumpe Regelung")
-        tech_garagen    = TechnicianModel(name="Beat Zimmermann",   expertise="Garage Garagentor Tiefgarage Schranke Parkhaus Tor Motor")
+        tech_garagen    = TechnicianModel(name="Dmitri Volkov",   expertise="Garage Garagentor Tiefgarage Schranke Parkhaus Tor Motor")
         tech_reinigung  = TechnicianModel(name="Dino Ferrari",         expertise="Reinigung Hausreinigung Treppenhausreinigung Desinfektion Pflege")
         session.add_all([
             tech_elektro, tech_sanitaer, tech_schlosser, tech_allgemein, tech_klima,
