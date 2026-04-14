@@ -20,9 +20,9 @@ export function DashboardPage({ tickets, technicians, onNavigateTickets }: Props
 
   /* ── Stats ── */
   const total    = tickets.length;
-  const open     = tickets.filter(t => t.status === "OPEN").length;
-  const active   = tickets.filter(t => t.status === "IN_PROGRESS" || t.status === "ASSIGNED").length;
-  const resolved = tickets.filter(t => t.status === "RESOLVED" || t.status === "CLOSED").length;
+  const open     = tickets.filter(tk => tk.status === "OPEN").length;
+  const active   = tickets.filter(tk => tk.status === "IN_PROGRESS" || tk.status === "ASSIGNED").length;
+  const resolved = tickets.filter(tk => tk.status === "RESOLVED" || tk.status === "CLOSED").length;
 
   const statCards = [
     { label: t("statsTotal"),  value: total,    cls: "stat-total",  filter: "" },
@@ -32,18 +32,18 @@ export function DashboardPage({ tickets, technicians, onNavigateTickets }: Props
   ];
 
   /* ── Priority distribution ── */
-  const high   = tickets.filter(t => t.priority === "HIGH").length;
-  const medium = tickets.filter(t => t.priority === "MEDIUM").length;
-  const low    = tickets.filter(t => t.priority === "LOW").length;
+  const high   = tickets.filter(tk => tk.priority === "HIGH").length;
+  const medium = tickets.filter(tk => tk.priority === "MEDIUM").length;
+  const low    = tickets.filter(tk => tk.priority === "LOW").length;
   const maxPrio = Math.max(high, medium, low, 1);
 
   /* ── Technician workload ── */
   const workload = technicians.map(tech => ({
     tech,
-    open:     tickets.filter(t => t.technician_id === tech.id && t.status === "OPEN").length,
-    active:   tickets.filter(t => t.technician_id === tech.id && (t.status === "ASSIGNED" || t.status === "IN_PROGRESS")).length,
-    done:     tickets.filter(t => t.technician_id === tech.id && (t.status === "RESOLVED" || t.status === "CLOSED")).length,
-    total:    tickets.filter(t => t.technician_id === tech.id).length,
+    open:     tickets.filter(tk => tk.technician_id === tech.id && tk.status === "OPEN").length,
+    active:   tickets.filter(tk => tk.technician_id === tech.id && (tk.status === "ASSIGNED" || tk.status === "IN_PROGRESS")).length,
+    done:     tickets.filter(tk => tk.technician_id === tech.id && (tk.status === "RESOLVED" || tk.status === "CLOSED")).length,
+    total:    tickets.filter(tk => tk.technician_id === tech.id).length,
   }));
 
   /* ── Recent tickets ── */
