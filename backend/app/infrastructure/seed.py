@@ -111,7 +111,7 @@ def seed_demo_data() -> None:
         session.flush()
 
         # ── Technicians ──────────────────────────────────────────────────
-        tech_elektro    = TechnicianModel(name="Lukas Meier",        expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung")
+        tech_elektro    = TechnicianModel(name="Lukas Novak",        expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung")
         tech_sanitaer   = TechnicianModel(name="Tim Horvat",         expertise="Sanitär Heizung Wasser Rohrbruch Wasserrohrbruch Warmwasser")
         tech_schlosser  = TechnicianModel(name="Fabian Dupont",      expertise="Schlosserei Türen Fenster Schloss Scharnier Einbruch")
         tech_allgemein  = TechnicianModel(name="Marco Bianchi",      expertise="Allgemein Maler Wände Fliesen Renovierung Anstrich")
