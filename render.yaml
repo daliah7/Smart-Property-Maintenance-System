@@ -3,6 +3,7 @@ services:
     name: smart-property-maintenance-backend
     env: docker
     dockerfilePath: backend/Dockerfile
+    dockerContext: backend
     region: frankfurt
     branch: main
     plan: free
