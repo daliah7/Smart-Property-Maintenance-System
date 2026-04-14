@@ -80,6 +80,17 @@
   color-scheme: light;
 }
 
+[data-theme="light"] .header-brand h1 {
+  background: linear-gradient(135deg, #1a2133 30%, #4a7aff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+[data-theme="light"] .header-brand p {
+  color: var(--text-secondary);
+}
+
 /* ─────────────────────────────────────────────
    Reset & Base
 ───────────────────────────────────────────── */
