@@ -67,37 +67,28 @@ function LangSwitcher() {
 /* ─── Navigation ─── */
 type Page = "dashboard" | "tickets" | "technicians" | "properties";
 
-function TopNav({ active, onNavigate }: { active: Page; onNavigate: (p: Page) => void }) {
+function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) => void }) {
   const { t } = useLanguage();
   const tabs: { key: Page; label: string; icon: string }[] = [
-    { key: "dashboard",   label: t("navDashboard"),   icon: "◈" },
-    { key: "tickets",     label: t("navTickets"),     icon: "◎" },
-    { key: "technicians", label: t("navTechnicians"), icon: "◉" },
-    { key: "properties",  label: t("navProperties"),  icon: "⊞" },
+    { key: "dashboard",    label: t("navDashboard"),    icon: "◈" },
+    { key: "tickets",      label: t("navTickets"),      icon: "◎" },
+    { key: "technicians",  label: t("navTechnicians"),  icon: "◉" },
+    { key: "properties",   label: t("navProperties"),   icon: "⊞" },
   ];
   return (
-    <header className="topnav">
-      <div className="topnav-brand">
-        <span className="topnav-logo-icon">🏠</span>
-        <span className="topnav-logo-text">SPMS</span>
-      </div>
-      <nav className="topnav-links" aria-label="Main navigation">
-        {tabs.map(tab => (
-          <button
-            key={tab.key}
-            className={`topnav-item ${active === tab.key ? "active" : ""}`}
-            onClick={() => onNavigate(tab.key)}
-            aria-current={active === tab.key ? "page" : undefined}
-          >
-            <span>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </nav>
-      <div className="topnav-right">
-        <LangSwitcher />
-      </div>
-    </header>
+    <nav className="nav-bar" aria-label="Main navigation">
+      {tabs.map(tab => (
+        <button
+          key={tab.key}
+          className={`nav-tab ${active === tab.key ? "active" : ""}`}
+          onClick={() => onNavigate(tab.key)}
+          aria-current={active === tab.key ? "page" : undefined}
+        >
+          <span className="nav-tab-icon">{tab.icon}</span>
+          {tab.label}
+        </button>
+      ))}
+    </nav>
   );
 }
 
@@ -233,19 +224,33 @@ function App() {
 
   return (
     <>
-      <div className="app-shell">
-        <TopNav active={activePage} onNavigate={setActivePage} />
+      <main className="app-shell">
+        {/* Header */}
+        <header className="app-header">
+          <div className="header-brand">
+            <h1>{t("appTitle")}</h1>
+            <p>{t("appSubtitle")}</p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div className="header-badge">{t("headerBadge")}</div>
+            <LangSwitcher />
+          </div>
+        </header>
 
-        <main className="main-content">
-          {activePage === "dashboard" && (
-            <DashboardPage
-              tickets={tickets}
-              technicians={technicians}
-              onNavigateTickets={handleNavigateToTickets}
-            />
-          )}
+        {/* Navigation */}
+        <NavBar active={activePage} onNavigate={setActivePage} />
 
-          {activePage === "tickets" && (
+        {/* Pages */}
+        {activePage === "dashboard" && (
+          <DashboardPage
+            tickets={tickets}
+            technicians={technicians}
+            onNavigateTickets={handleNavigateToTickets}
+          />
+        )}
+
+        {activePage === "tickets" && (
+          <>
             <div className="layout-grid">
               <div className="column-left">
                 <TicketForm units={units} tenants={tenants} onCreate={handleCreateTicket} />
@@ -277,22 +282,22 @@ function App() {
                 />
               </div>
             </div>
-          )}
+          </>
+        )}
 
-          {activePage === "technicians" && (
-            <TechniciansPage technicians={technicians} tickets={tickets} />
-          )}
+        {activePage === "technicians" && (
+          <TechniciansPage technicians={technicians} tickets={tickets} />
+        )}
 
-          {activePage === "properties" && (
-            <PropertiesPage
-              properties={properties}
-              units={units}
-              tenants={tenants}
-              tickets={tickets}
-            />
-          )}
-        </main>
-      </div>
+        {activePage === "properties" && (
+          <PropertiesPage
+            properties={properties}
+            units={units}
+            tenants={tenants}
+            tickets={tickets}
+          />
+        )}
+      </main>
 
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
     </>
