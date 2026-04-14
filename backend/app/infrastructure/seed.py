@@ -41,7 +41,11 @@ def seed_demo_data() -> None:
             name="Rive du Lac",
             address="Quai du Général-Guisan 34, 1204 Genève",
         )
-        session.add_all([landmark, riverside, sunset, zuerichberg, nidwalden, rive_lac])
+        lausanne = PropertyModel(
+            name="Les Terrasses de Lausanne",
+            address="Avenue de la Gare 12, 1003 Lausanne",
+        )
+        session.add_all([landmark, riverside, sunset, zuerichberg, nidwalden, rive_lac, lausanne])
         session.flush()
 
         # ── Units ────────────────────────────────────────────────────────
@@ -61,6 +65,9 @@ def seed_demo_data() -> None:
         unit_f1 = UnitModel(property_id=rive_lac.id,     name="F1", floor="EG")
         unit_f2 = UnitModel(property_id=rive_lac.id,     name="F2", floor="1. OG")
         unit_f3 = UnitModel(property_id=rive_lac.id,     name="F3", floor="2. OG")
+        unit_g1 = UnitModel(property_id=lausanne.id,     name="G1", floor="EG")
+        unit_g2 = UnitModel(property_id=lausanne.id,     name="G2", floor="1. OG")
+        unit_g3 = UnitModel(property_id=lausanne.id,     name="G3", floor="2. OG")
         session.add_all([
             unit_a1, unit_a2, unit_a3,
             unit_b1, unit_b2,
@@ -68,6 +75,7 @@ def seed_demo_data() -> None:
             unit_d1, unit_d2, unit_d3,
             unit_e1, unit_e2,
             unit_f1, unit_f2, unit_f3,
+            unit_g1, unit_g2, unit_g3,
         ])
         session.flush()
 
@@ -88,6 +96,9 @@ def seed_demo_data() -> None:
         tenant_f1 = TenantModel(name="Céline Dupont",      email="celine.dupont@example.com",       unit_id=unit_f1.id)
         tenant_f2 = TenantModel(name="Marc Fontaine",      email="marc.fontaine@example.com",       unit_id=unit_f2.id)
         tenant_f3 = TenantModel(name="Isabelle Rochat",    email="isabelle.rochat@example.com",     unit_id=unit_f3.id)
+        tenant_g1 = TenantModel(name="Nathalie Vidal",     email="nathalie.vidal@example.com",      unit_id=unit_g1.id)
+        tenant_g2 = TenantModel(name="Olivier Chevalier",  email="olivier.chevalier@example.com",   unit_id=unit_g2.id)
+        tenant_g3 = TenantModel(name="Camille Morel",      email="camille.morel@example.com",       unit_id=unit_g3.id)
         session.add_all([
             tenant_a1, tenant_a2, tenant_a3,
             tenant_b1, tenant_b2,
@@ -95,6 +106,7 @@ def seed_demo_data() -> None:
             tenant_d1, tenant_d2, tenant_d3,
             tenant_e1, tenant_e2,
             tenant_f1, tenant_f2, tenant_f3,
+            tenant_g1, tenant_g2, tenant_g3,
         ])
         session.flush()
 
@@ -212,10 +224,30 @@ def seed_demo_data() -> None:
             unit_id=unit_f3.id, tenant_id=tenant_f3.id,
             status="OPEN", priority="MEDIUM",
         )
+        # Les Terrasses de Lausanne
+        ticket_17 = MaintenanceTicketModel(
+            title="Rohrbruch im Badezimmer",
+            description="Ein Rohr unter dem Waschbecken ist gebrochen, Wasser läuft auf den Boden.",
+            unit_id=unit_g1.id, tenant_id=tenant_g1.id,
+            technician_id=tech_sanitaer.id, status="IN_PROGRESS", priority="HIGH",
+        )
+        ticket_18 = MaintenanceTicketModel(
+            title="Storen (Jalousie) klemmt",
+            description="Die elektrische Storen im Wohnzimmer lässt sich nicht mehr hochfahren.",
+            unit_id=unit_g2.id, tenant_id=tenant_g2.id,
+            status="OPEN", priority="MEDIUM",
+        )
+        ticket_19 = MaintenanceTicketModel(
+            title="Gartentor defekt — Schloss kaputt",
+            description="Das Schloss am Gartentor ist gebrochen, Tor lässt sich nicht mehr schliessen.",
+            unit_id=unit_g3.id, tenant_id=tenant_g3.id,
+            technician_id=tech_schlosser.id, status="ASSIGNED", priority="MEDIUM",
+        )
         session.add_all([
             ticket_1, ticket_2, ticket_3, ticket_4, ticket_5, ticket_6,
             ticket_7, ticket_8, ticket_9, ticket_10, ticket_11, ticket_12,
             ticket_13, ticket_14, ticket_15, ticket_16,
+            ticket_17, ticket_18, ticket_19,
         ])
         session.flush()
 
