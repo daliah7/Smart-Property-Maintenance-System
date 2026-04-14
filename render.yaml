@@ -9,6 +9,6 @@ services:
     plan: free
     envVars:
       - key: DATABASE_URL
-        sync: false        # paste your Neon connection string in Render dashboard
+        value: sqlite:////tmp/spms.db
       - key: CORS_ORIGINS
-        value: https://daliah7.github.io
+        value: https://daliah7.github.io,http://localhost:5173,http://localhost:4173

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./dev.db"
     app_name: str = "Smart Property Maintenance System"
     api_prefix: str = "/api"
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:4173,https://daliah7.github.io"
 
     @property
     def cors_origins_list(self) -> list[str]:
