@@ -49,6 +49,21 @@ function useToasts() {
   return { toasts, push, dismiss };
 }
 
+/* ─── Theme ─── */
+function useTheme() {
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    return (localStorage.getItem("spms-theme") as "dark" | "light") ?? "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("spms-theme", theme);
+  }, [theme]);
+
+  const toggle = () => setTheme(t => t === "dark" ? "light" : "dark");
+  return { theme, toggle };
+}
+
 /* ─── Language Switcher ─── */
 function LangSwitcher() {
   const { lang, setLang } = useLanguage();
@@ -111,6 +126,7 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
 /* ─── Main App ─── */
 function App() {
   const { t, tf } = useLanguage();
+  const { theme, toggle: toggleTheme } = useTheme();
 
   const [activePage, setActivePage]             = useState<Page>("dashboard");
   const [tickets, setTickets]                   = useState<Ticket[]>([]);
@@ -233,6 +249,14 @@ function App() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div className="header-badge">{t("headerBadge")}</div>
+            <button
+              className="theme-toggle"
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              title={theme === "dark" ? "Light mode" : "Dark mode"}
+            >
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
             <LangSwitcher />
           </div>
         </header>
