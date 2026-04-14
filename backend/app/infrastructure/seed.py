@@ -111,14 +111,32 @@ def seed_demo_data() -> None:
         session.flush()
 
         # ── Technicians ──────────────────────────────────────────────────
-        tech_elektro   = TechnicianModel(name="Lea Hoffmann",  expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung")
-        tech_sanitaer  = TechnicianModel(name="Tim Berger",    expertise="Sanitär Heizung Wasser Rohrbruch Wasserrohrbruch Warmwasser")
-        tech_schlosser = TechnicianModel(name="Anna Schulz",   expertise="Schlosserei Türen Fenster Schloss Scharnier Einbruch")
-        tech_allgemein = TechnicianModel(name="Marco Richter", expertise="Allgemein Maler Wände Fliesen Renovierung Anstrich")
-        tech_klima     = TechnicianModel(name="Tobias Lang",   expertise="Klimaanlage Lüftung Klimatechnik Belüftung Kühlung Ventilation")
-        tech_dach      = TechnicianModel(name="Klara Vogel",   expertise="Dach Dachdecker Abdichtung Dachrinne Dachschaden Undicht")
-        tech_garten    = TechnicianModel(name="Stefan Krause", expertise="Garten Aussenanlagen Grünfläche Baum Hecke Gehweg Pflaster")
-        session.add_all([tech_elektro, tech_sanitaer, tech_schlosser, tech_allgemein, tech_klima, tech_dach, tech_garten])
+        tech_elektro    = TechnicianModel(name="Lea Hoffmann",      expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung")
+        tech_sanitaer   = TechnicianModel(name="Tim Berger",        expertise="Sanitär Heizung Wasser Rohrbruch Wasserrohrbruch Warmwasser")
+        tech_schlosser  = TechnicianModel(name="Anna Schulz",       expertise="Schlosserei Türen Fenster Schloss Scharnier Einbruch")
+        tech_allgemein  = TechnicianModel(name="Marco Richter",     expertise="Allgemein Maler Wände Fliesen Renovierung Anstrich")
+        tech_klima      = TechnicianModel(name="Tobias Lang",       expertise="Klimaanlage Lüftung Klimatechnik Belüftung Kühlung Ventilation")
+        tech_dach       = TechnicianModel(name="Klara Vogel",       expertise="Dach Dachdecker Abdichtung Dachrinne Dachschaden Undicht")
+        tech_garten     = TechnicianModel(name="Stefan Krause",     expertise="Garten Aussenanlagen Grünfläche Baum Hecke Gehweg Pflaster")
+        tech_aufzug     = TechnicianModel(name="Reto Amstutz",      expertise="Aufzug Lift Elevator Aufzugswartung Aufzugsanlage")
+        tech_solar      = TechnicianModel(name="Sandra Meier",      expertise="Solar Photovoltaik Solaranlage Solarpanel Energie Strom")
+        tech_maler      = TechnicianModel(name="Patrick Brunner",   expertise="Maler Farbe Anstrich Tapete Putz Fassade Lackierung")
+        tech_boden      = TechnicianModel(name="Yves Crettenand",   expertise="Boden Parkett Laminat Fliesen Estrich Teppich Bodenbelag")
+        tech_it         = TechnicianModel(name="Laura Gerber",      expertise="IT Netzwerk Internet WLAN Kabel EDV Haustechnik Smarthome")
+        tech_brand      = TechnicianModel(name="Dominik Frei",      expertise="Brandschutz Feuermelder Sprinkler Feuerlöscher Sicherheit Brand")
+        tech_storen     = TechnicianModel(name="Monika Wenger",     expertise="Storen Jalousie Rolladen Sonnenschutz Markise Beschattung")
+        tech_schreiner  = TechnicianModel(name="Hannes Lüthi",      expertise="Schreiner Holz Möbel Einbauschrank Treppe Parkett Holzarbeiten")
+        tech_installat  = TechnicianModel(name="Fatima El-Amrani",  expertise="Sanitärinstallation Wasserleitung Abfluss Rohr Kanalisation Ventil")
+        tech_maurer     = TechnicianModel(name="Giorgio Ferretti",  expertise="Maurer Beton Mauerwerk Risse Abdichtung Keller Fundament")
+        tech_haustechnik= TechnicianModel(name="Nicole Amstutz",    expertise="Haustechnik Gebäudetechnik Steuerung Automation Pumpe Regelung")
+        tech_garagen    = TechnicianModel(name="Beat Zimmermann",   expertise="Garage Garagentor Tiefgarage Schranke Parkhaus Tor Motor")
+        tech_reinigung  = TechnicianModel(name="Petra Hug",         expertise="Reinigung Hausreinigung Treppenhausreinigung Desinfektion Pflege")
+        session.add_all([
+            tech_elektro, tech_sanitaer, tech_schlosser, tech_allgemein, tech_klima,
+            tech_dach, tech_garten, tech_aufzug, tech_solar, tech_maler, tech_boden,
+            tech_it, tech_brand, tech_storen, tech_schreiner, tech_installat,
+            tech_maurer, tech_haustechnik, tech_garagen, tech_reinigung,
+        ])
         session.flush()
 
         # ── Tickets ──────────────────────────────────────────────────────
