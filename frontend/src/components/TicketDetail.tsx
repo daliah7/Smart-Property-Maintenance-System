@@ -255,7 +255,7 @@ export function TicketDetail({
               ? <span className="invoice-status-paid">{t("invoiceStatusPaid")}</span>
               : <span className="chip">{t("invoiceStatusOpen")}</span>}
           </div>
-          <div className="invoice-amount">€{Number(invoice.amount).toFixed(2)}</div>
+          <div className="invoice-amount">CHF {Number(invoice.amount).toFixed(2)}</div>
           {invoice.paid_at && (
             <p style={{ fontSize: "0.78rem", color: "var(--text-secondary)", margin: "8px 0 0" }}>
               {t("invoicePaidAt")} {formatDate(invoice.paid_at, lang)}

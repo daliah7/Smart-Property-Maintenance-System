@@ -19,15 +19,15 @@ def seed_demo_data() -> None:
         # ── Properties ──────────────────────────────────────────────────
         landmark = PropertyModel(
             name="Landmark Residences",
-            address="Schillerstraße 12, 10115 Berlin",
+            address="Bahnhofstrasse 12, 8001 Zürich",
         )
         riverside = PropertyModel(
             name="Riverside Campus",
-            address="Mühlenweg 27, 90402 Nürnberg",
+            address="Limmatquai 27, 8001 Zürich",
         )
         sunset = PropertyModel(
             name="Sunset Gardens",
-            address="Rosenweg 5, 80331 München",
+            address="Rosenweg 5, 3007 Bern",
         )
         session.add_all([landmark, riverside, sunset])
         session.flush()
