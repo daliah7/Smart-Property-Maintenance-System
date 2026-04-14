@@ -19,7 +19,7 @@ def seed_demo_data() -> None:
         # ── Properties ──────────────────────────────────────────────────
         landmark = PropertyModel(
             name="Landmark Residences",
-            address="Junkerngasse 47, 3011 Bern",
+            address="Rosenweg 14, 3007 Bern",
         )
         riverside = PropertyModel(
             name="Riverside Campus",
@@ -27,53 +27,95 @@ def seed_demo_data() -> None:
         )
         sunset = PropertyModel(
             name="Sunset Gardens",
-            address="Via Nassa 18, 6900 Lugano",
+            address="Via Cortivo 8, 6976 Castagnola-Lugano",
         )
-        session.add_all([landmark, riverside, sunset])
+        zuerichberg = PropertyModel(
+            name="Zürichberg Residenz",
+            address="Zürichbergstrasse 55, 8044 Zürich",
+        )
+        nidwalden = PropertyModel(
+            name="Seepark Nidwalden",
+            address="Seestrasse 22, 6374 Buochs",
+        )
+        rive_lac = PropertyModel(
+            name="Rive du Lac",
+            address="Quai du Général-Guisan 34, 1204 Genève",
+        )
+        session.add_all([landmark, riverside, sunset, zuerichberg, nidwalden, rive_lac])
         session.flush()
 
         # ── Units ────────────────────────────────────────────────────────
-        unit_a1 = UnitModel(property_id=landmark.id, name="A1", floor="EG")
-        unit_a2 = UnitModel(property_id=landmark.id, name="A2", floor="EG")
-        unit_a3 = UnitModel(property_id=landmark.id, name="A3", floor="1. OG")
-        unit_b1 = UnitModel(property_id=riverside.id, name="B1", floor="1. OG")
-        unit_b2 = UnitModel(property_id=riverside.id, name="B2", floor="2. OG")
-        unit_c1 = UnitModel(property_id=sunset.id,   name="C1", floor="EG")
-        unit_c2 = UnitModel(property_id=sunset.id,   name="C2", floor="1. OG")
-        unit_c3 = UnitModel(property_id=sunset.id,   name="C3", floor="2. OG")
-        session.add_all([unit_a1, unit_a2, unit_a3, unit_b1, unit_b2, unit_c1, unit_c2, unit_c3])
+        unit_a1 = UnitModel(property_id=landmark.id,     name="A1", floor="EG")
+        unit_a2 = UnitModel(property_id=landmark.id,     name="A2", floor="EG")
+        unit_a3 = UnitModel(property_id=landmark.id,     name="A3", floor="1. OG")
+        unit_b1 = UnitModel(property_id=riverside.id,    name="B1", floor="1. OG")
+        unit_b2 = UnitModel(property_id=riverside.id,    name="B2", floor="2. OG")
+        unit_c1 = UnitModel(property_id=sunset.id,       name="C1", floor="EG")
+        unit_c2 = UnitModel(property_id=sunset.id,       name="C2", floor="1. OG")
+        unit_c3 = UnitModel(property_id=sunset.id,       name="C3", floor="2. OG")
+        unit_d1 = UnitModel(property_id=zuerichberg.id,  name="D1", floor="1. OG")
+        unit_d2 = UnitModel(property_id=zuerichberg.id,  name="D2", floor="2. OG")
+        unit_d3 = UnitModel(property_id=zuerichberg.id,  name="D3", floor="Penthouse")
+        unit_e1 = UnitModel(property_id=nidwalden.id,    name="E1", floor="EG")
+        unit_e2 = UnitModel(property_id=nidwalden.id,    name="E2", floor="1. OG")
+        unit_f1 = UnitModel(property_id=rive_lac.id,     name="F1", floor="EG")
+        unit_f2 = UnitModel(property_id=rive_lac.id,     name="F2", floor="1. OG")
+        unit_f3 = UnitModel(property_id=rive_lac.id,     name="F3", floor="2. OG")
+        session.add_all([
+            unit_a1, unit_a2, unit_a3,
+            unit_b1, unit_b2,
+            unit_c1, unit_c2, unit_c3,
+            unit_d1, unit_d2, unit_d3,
+            unit_e1, unit_e2,
+            unit_f1, unit_f2, unit_f3,
+        ])
         session.flush()
 
         # ── Tenants ──────────────────────────────────────────────────────
-        tenant_a1 = TenantModel(name="Mia Grün",        email="mia.gruen@example.com",      unit_id=unit_a1.id)
-        tenant_a2 = TenantModel(name="Jonas Weber",     email="jonas.weber@example.com",     unit_id=unit_a2.id)
-        tenant_a3 = TenantModel(name="Lena Fischer",    email="lena.fischer@example.com",    unit_id=unit_a3.id)
-        tenant_b1 = TenantModel(name="Sara Klein",      email="sara.klein@example.com",      unit_id=unit_b1.id)
-        tenant_b2 = TenantModel(name="Felix Braun",     email="felix.braun@example.com",     unit_id=unit_b2.id)
-        tenant_c1 = TenantModel(name="Sophie Müller",   email="sophie.mueller@example.com",  unit_id=unit_c1.id)
-        tenant_c2 = TenantModel(name="David Schneider", email="david.schneider@example.com", unit_id=unit_c2.id)
-        tenant_c3 = TenantModel(name="Anna Bauer",      email="anna.bauer@example.com",      unit_id=unit_c3.id)
-        session.add_all([tenant_a1, tenant_a2, tenant_a3, tenant_b1, tenant_b2, tenant_c1, tenant_c2, tenant_c3])
+        tenant_a1 = TenantModel(name="Mia Grün",          email="mia.gruen@example.com",          unit_id=unit_a1.id)
+        tenant_a2 = TenantModel(name="Jonas Weber",        email="jonas.weber@example.com",         unit_id=unit_a2.id)
+        tenant_a3 = TenantModel(name="Lena Fischer",       email="lena.fischer@example.com",        unit_id=unit_a3.id)
+        tenant_b1 = TenantModel(name="Sara Klein",         email="sara.klein@example.com",          unit_id=unit_b1.id)
+        tenant_b2 = TenantModel(name="Felix Braun",        email="felix.braun@example.com",         unit_id=unit_b2.id)
+        tenant_c1 = TenantModel(name="Sophie Müller",      email="sophie.mueller@example.com",      unit_id=unit_c1.id)
+        tenant_c2 = TenantModel(name="David Schneider",    email="david.schneider@example.com",     unit_id=unit_c2.id)
+        tenant_c3 = TenantModel(name="Anna Bauer",         email="anna.bauer@example.com",          unit_id=unit_c3.id)
+        tenant_d1 = TenantModel(name="Lukas Meier",        email="lukas.meier@example.com",         unit_id=unit_d1.id)
+        tenant_d2 = TenantModel(name="Nina Keller",        email="nina.keller@example.com",         unit_id=unit_d2.id)
+        tenant_d3 = TenantModel(name="Pascal Zimmermann",  email="pascal.zimmermann@example.com",   unit_id=unit_d3.id)
+        tenant_e1 = TenantModel(name="Ursula Gamma",       email="ursula.gamma@example.com",        unit_id=unit_e1.id)
+        tenant_e2 = TenantModel(name="Bruno Kälin",        email="bruno.kaelin@example.com",        unit_id=unit_e2.id)
+        tenant_f1 = TenantModel(name="Céline Dupont",      email="celine.dupont@example.com",       unit_id=unit_f1.id)
+        tenant_f2 = TenantModel(name="Marc Fontaine",      email="marc.fontaine@example.com",       unit_id=unit_f2.id)
+        tenant_f3 = TenantModel(name="Isabelle Rochat",    email="isabelle.rochat@example.com",     unit_id=unit_f3.id)
+        session.add_all([
+            tenant_a1, tenant_a2, tenant_a3,
+            tenant_b1, tenant_b2,
+            tenant_c1, tenant_c2, tenant_c3,
+            tenant_d1, tenant_d2, tenant_d3,
+            tenant_e1, tenant_e2,
+            tenant_f1, tenant_f2, tenant_f3,
+        ])
         session.flush()
 
-        # ── Technicians (verschiedene Fachgebiete für Auto-Zuweisung) ───
-        tech_elektro   = TechnicianModel(name="Lea Hoffmann",    expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung")
-        tech_sanitaer  = TechnicianModel(name="Tim Berger",      expertise="Sanitär Heizung Wasser Rohrbruch Wasserrohrbruch Warmwasser")
-        tech_schlosser = TechnicianModel(name="Anna Schulz",     expertise="Schlosserei Türen Fenster Schloss Scharnier Einbruch")
-        tech_allgemein = TechnicianModel(name="Marco Richter",   expertise="Allgemein Maler Wände Fliesen Renovierung Anstrich")
-        tech_klima     = TechnicianModel(name="Tobias Lang",     expertise="Klimaanlage Lüftung Klimatechnik Belüftung Kühlung Ventilation")
-        tech_dach      = TechnicianModel(name="Klara Vogel",     expertise="Dach Dachdecker Abdichtung Dachrinne Dachschaden Undicht")
-        tech_garten    = TechnicianModel(name="Stefan Krause",   expertise="Garten Aussenanlagen Grünfläche Baum Hecke Gehweg Pflaster")
+        # ── Technicians ──────────────────────────────────────────────────
+        tech_elektro   = TechnicianModel(name="Lea Hoffmann",  expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung")
+        tech_sanitaer  = TechnicianModel(name="Tim Berger",    expertise="Sanitär Heizung Wasser Rohrbruch Wasserrohrbruch Warmwasser")
+        tech_schlosser = TechnicianModel(name="Anna Schulz",   expertise="Schlosserei Türen Fenster Schloss Scharnier Einbruch")
+        tech_allgemein = TechnicianModel(name="Marco Richter", expertise="Allgemein Maler Wände Fliesen Renovierung Anstrich")
+        tech_klima     = TechnicianModel(name="Tobias Lang",   expertise="Klimaanlage Lüftung Klimatechnik Belüftung Kühlung Ventilation")
+        tech_dach      = TechnicianModel(name="Klara Vogel",   expertise="Dach Dachdecker Abdichtung Dachrinne Dachschaden Undicht")
+        tech_garten    = TechnicianModel(name="Stefan Krause", expertise="Garten Aussenanlagen Grünfläche Baum Hecke Gehweg Pflaster")
         session.add_all([tech_elektro, tech_sanitaer, tech_schlosser, tech_allgemein, tech_klima, tech_dach, tech_garten])
         session.flush()
 
-        # ── Tickets (verschiedene Prioritäten + Status für Demo) ─────────
+        # ── Tickets ──────────────────────────────────────────────────────
+        # Landmark Residences (Bern)
         ticket_1 = MaintenanceTicketModel(
             title="Heizungsausfall im Wohnzimmer",
             description="Die Heizung heizt seit gestern Abend nicht mehr. Notfall da Aussentemperatur -5°C.",
             unit_id=unit_a1.id, tenant_id=tenant_a1.id,
-            technician_id=tech_sanitaer.id,
-            status="RESOLVED", priority="HIGH",
+            technician_id=tech_sanitaer.id, status="RESOLVED", priority="HIGH",
         )
         ticket_2 = MaintenanceTicketModel(
             title="Fenster klemmt — Schlafzimmer",
@@ -82,25 +124,25 @@ def seed_demo_data() -> None:
             status="OPEN", priority="MEDIUM",
         )
         ticket_3 = MaintenanceTicketModel(
+            title="Sicherung springt dauernd raus",
+            description="Die Sicherung für Zimmer 2 fliegt mehrmals täglich raus. Elektrik prüfen.",
+            unit_id=unit_a3.id, tenant_id=tenant_a3.id,
+            status="OPEN", priority="HIGH",
+        )
+        # Riverside Campus (Luzern)
+        ticket_4 = MaintenanceTicketModel(
             title="Stromausfall Küchensteckdose",
             description="Die Steckdose in der Küche liefert keinen Strom mehr. Kurzschluss vermutlich.",
             unit_id=unit_b1.id, tenant_id=tenant_b1.id,
-            technician_id=tech_elektro.id,
-            status="IN_PROGRESS", priority="HIGH",
+            technician_id=tech_elektro.id, status="IN_PROGRESS", priority="HIGH",
         )
-        ticket_4 = MaintenanceTicketModel(
+        ticket_5 = MaintenanceTicketModel(
             title="Routinewartung Heizungsanlage",
             description="Jährliche Inspektion und Wartung der Zentralheizung.",
             unit_id=unit_b2.id, tenant_id=tenant_b2.id,
             status="OPEN", priority="LOW",
         )
-        ticket_5 = MaintenanceTicketModel(
-            title="Wasserhahn tropft im Bad",
-            description="Der Wasserhahn im Badezimmer tropft dauerhaft.",
-            unit_id=unit_a2.id, tenant_id=tenant_a2.id,
-            technician_id=tech_sanitaer.id,
-            status="ASSIGNED", priority="MEDIUM",
-        )
+        # Sunset Gardens (Lugano)
         ticket_6 = MaintenanceTicketModel(
             title="Klimaanlage kühlt nicht mehr",
             description="Die Klimaanlage im Schlafzimmer läuft, produziert aber keine Kühlung mehr.",
@@ -111,48 +153,73 @@ def seed_demo_data() -> None:
             title="Dachrinne verstopft — Wasserschaden droht",
             description="Die Dachrinne ist vollständig verstopft, bei Regen läuft Wasser die Fassade runter.",
             unit_id=unit_c2.id, tenant_id=tenant_c2.id,
-            technician_id=tech_dach.id,
-            status="ASSIGNED", priority="HIGH",
+            technician_id=tech_dach.id, status="ASSIGNED", priority="HIGH",
         )
         ticket_8 = MaintenanceTicketModel(
-            title="Sicherung springt dauernd raus",
-            description="Die Sicherung für Zimmer 2 fliegt mehrmals täglich raus. Elektrik prüfen.",
-            unit_id=unit_a3.id, tenant_id=tenant_a3.id,
-            status="OPEN", priority="HIGH",
-        )
-        ticket_9 = MaintenanceTicketModel(
             title="Türschloss defekt — Haupteingang",
             description="Das Türschloss am Haupteingang klemmt. Einbruchgefahr.",
             unit_id=unit_c3.id, tenant_id=tenant_c3.id,
-            technician_id=tech_schlosser.id,
-            status="IN_PROGRESS", priority="HIGH",
+            technician_id=tech_schlosser.id, status="IN_PROGRESS", priority="HIGH",
+        )
+        # Zürichberg Residenz
+        ticket_9 = MaintenanceTicketModel(
+            title="Aufzug ausser Betrieb",
+            description="Der Aufzug bleibt zwischen EG und 1. OG stecken. Dringend reparieren.",
+            unit_id=unit_d1.id, tenant_id=tenant_d1.id,
+            status="OPEN", priority="HIGH",
         )
         ticket_10 = MaintenanceTicketModel(
-            title="Gehwegplatten locker — Sturzgefahr",
-            description="Mehrere Gehwegplatten vor dem Eingang sind locker. Sturzgefahr für Bewohner.",
-            unit_id=unit_c1.id, tenant_id=tenant_c1.id,
-            status="OPEN", priority="MEDIUM",
+            title="Wasserhahn tropft im Bad",
+            description="Der Wasserhahn im Badezimmer tropft dauerhaft — hoher Wasserverbrauch.",
+            unit_id=unit_d2.id, tenant_id=tenant_d2.id,
+            technician_id=tech_sanitaer.id, status="ASSIGNED", priority="MEDIUM",
         )
         ticket_11 = MaintenanceTicketModel(
             title="Wandfarbe abgeblättert — Flur",
-            description="Im Eingangsflur blättert die Farbe ab, kosmetische Renovation nötig.",
-            unit_id=unit_b2.id, tenant_id=tenant_b2.id,
-            technician_id=tech_allgemein.id,
-            status="CLOSED", priority="LOW",
+            description="Im Eingangsflur blättert die Farbe grossflächig ab, Renovation nötig.",
+            unit_id=unit_d3.id, tenant_id=tenant_d3.id,
+            technician_id=tech_allgemein.id, status="CLOSED", priority="LOW",
         )
+        # Seepark Nidwalden
         ticket_12 = MaintenanceTicketModel(
             title="Kein warmes Wasser seit 2 Tagen",
             description="Warmwasser funktioniert nicht. Dringend, da Kleinkind im Haushalt.",
-            unit_id=unit_c2.id, tenant_id=tenant_c2.id,
+            unit_id=unit_e1.id, tenant_id=tenant_e1.id,
             status="OPEN", priority="HIGH",
+        )
+        ticket_13 = MaintenanceTicketModel(
+            title="Gehwegplatten locker — Sturzgefahr",
+            description="Mehrere Gehwegplatten vor dem Seeeingang sind locker. Sturzgefahr.",
+            unit_id=unit_e2.id, tenant_id=tenant_e2.id,
+            technician_id=tech_garten.id, status="ASSIGNED", priority="MEDIUM",
+        )
+        # Rive du Lac (Genf)
+        ticket_14 = MaintenanceTicketModel(
+            title="Feuchtigkeitsschaden im Keller",
+            description="Nach dem Regen dringt Wasser durch die Kellerwand. Schimmelgefahr.",
+            unit_id=unit_f1.id, tenant_id=tenant_f1.id,
+            status="OPEN", priority="HIGH",
+        )
+        ticket_15 = MaintenanceTicketModel(
+            title="Lüftungsanlage defekt",
+            description="Die zentrale Lüftung macht laute Geräusche und riecht verbrannt.",
+            unit_id=unit_f2.id, tenant_id=tenant_f2.id,
+            technician_id=tech_klima.id, status="IN_PROGRESS", priority="HIGH",
+        )
+        ticket_16 = MaintenanceTicketModel(
+            title="Balkongeländer locker",
+            description="Das Geländer auf dem Balkon wackelt stark — Sicherheitsrisiko.",
+            unit_id=unit_f3.id, tenant_id=tenant_f3.id,
+            status="OPEN", priority="MEDIUM",
         )
         session.add_all([
             ticket_1, ticket_2, ticket_3, ticket_4, ticket_5, ticket_6,
             ticket_7, ticket_8, ticket_9, ticket_10, ticket_11, ticket_12,
+            ticket_13, ticket_14, ticket_15, ticket_16,
         ])
         session.flush()
 
-        invoice_1 = InvoiceModel(ticket_id=ticket_1.id, amount=Decimal("240.00"), paid=True)
+        invoice_1  = InvoiceModel(ticket_id=ticket_1.id,  amount=Decimal("240.00"), paid=True)
         invoice_11 = InvoiceModel(ticket_id=ticket_11.id, amount=Decimal("180.00"), paid=True)
         session.add_all([invoice_1, invoice_11])
         session.commit()
