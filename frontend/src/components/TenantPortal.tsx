@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createTicket } from "../api";
 import { useLanguage } from "../i18n/LanguageContext";
 import type { Ticket, Unit } from "../types";
 import { StatusBadge } from "./StatusBadge";
+import { AvailabilityCalendar } from "./AvailabilityCalendar";
 
 const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
 
@@ -16,7 +17,34 @@ function getSLALabel(ticket: Ticket): { label: string; cls: string } | null {
 }
 
 function formatPortalDate(iso: string): string {
-  return new Intl.DateTimeFormat("de-CH", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  return new Intl.DateTimeFormat("de-CH", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+/** Compress an image file to a JPEG data-URL, max 800px wide, quality 0.72 */
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 800;
+        let { width, height } = img;
+        if (width > MAX) { height = Math.round((height * MAX) / width); width = MAX; }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      img.onerror = reject;
+      img.src = e.target!.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 interface Props {
@@ -28,24 +56,80 @@ interface Props {
 
 export function TenantPortal({ units, tickets, onTicketCreated, onShowTicket }: Props) {
   const { t } = useLanguage();
+
   const [selectedUnit, setSelectedUnit] = useState<number>(0);
-  const [activeTab, setActiveTab] = useState<"create" | "list">("create");
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
+  const [activeTab, setActiveTab]       = useState<"create" | "list">("create");
+
+  // Form state
+  const [reporterName, setReporterName] = useState("");
+  const [title, setTitle]               = useState("");
+  const [desc, setDesc]                 = useState("");
+  const [availDates, setAvailDates]     = useState<string[]>([]);
+  const [imageData, setImageData]       = useState<string | null>(null);
+  const [imageName, setImageName]       = useState<string>("");
+  const [imageError, setImageError]     = useState<string>("");
+  const [submitting, setSubmitting]     = useState(false);
+  const [successMsg, setSuccessMsg]     = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const myTickets = selectedUnit > 0
-    ? tickets.filter(t => t.unit_id === selectedUnit).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    ? tickets
+        .filter(tk => tk.unit_id === selectedUnit)
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     : [];
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageError("");
+
+    if (!file.type.startsWith("image/")) {
+      setImageError("Nur Bilddateien erlaubt (JPG, PNG, WEBP …)");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setImageError("Bild zu gross (max. 10 MB)");
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      setImageData(compressed);
+      setImageName(file.name);
+    } catch {
+      setImageError("Bild konnte nicht verarbeitet werden.");
+    }
+  };
+
+  const removeImage = () => {
+    setImageData(null);
+    setImageName("");
+    setImageError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUnit || !title.trim() || !desc.trim()) return;
+    if (!selectedUnit || !reporterName.trim() || !title.trim() || !desc.trim()) return;
+
     setSubmitting(true);
     try {
-      await createTicket({ title: title.trim(), description: desc.trim(), unit_id: selectedUnit });
-      setTitle(""); setDesc("");
+      // Append availability and image to description
+      const availBlock = availDates.length > 0
+        ? `\n\nVerfügbarkeit: ${availDates.join(", ")}`
+        : "";
+      const fullDescription = imageData
+        ? `${desc.trim()}${availBlock}\n\n[BILD:${imageName}]\n${imageData}`
+        : `${desc.trim()}${availBlock}`;
+
+      await createTicket({
+        title: title.trim(),
+        description: fullDescription,
+        unit_id: selectedUnit,
+        reporter_name: reporterName.trim(),
+      });
+
+      setTitle(""); setDesc(""); removeImage(); setAvailDates([]);
       setSuccessMsg(t("portalSuccess"));
       onTicketCreated();
       setTimeout(() => { setSuccessMsg(""); setActiveTab("list"); }, 1800);
@@ -54,11 +138,13 @@ export function TenantPortal({ units, tickets, onTicketCreated, onShowTicket }: 
     }
   };
 
+  const canSubmit = !submitting && !!selectedUnit && !!reporterName.trim() && !!title.trim() && !!desc.trim();
+
   return (
     <div className="portal-page">
       {/* Header */}
       <div className="portal-header">
-        <div className="portal-header-icon">🏠</div>
+        <div className="portal-header-icon">⌂</div>
         <div>
           <h2 className="portal-title">{t("portalTitle")}</h2>
           <p className="portal-subtitle">{t("portalSubtitle")}</p>
@@ -90,7 +176,7 @@ export function TenantPortal({ units, tickets, onTicketCreated, onShowTicket }: 
           ＋ {t("portalCreateTitle")}
         </button>
         <button className={`portal-tab ${activeTab === "list" ? "active" : ""}`} onClick={() => setActiveTab("list")}>
-          📋 {t("portalMyTickets")} {selectedUnit > 0 && myTickets.length > 0 && `(${myTickets.length})`}
+          ◎ {t("portalMyTickets")} {selectedUnit > 0 && myTickets.length > 0 && `(${myTickets.length})`}
         </button>
       </div>
 
@@ -99,6 +185,22 @@ export function TenantPortal({ units, tickets, onTicketCreated, onShowTicket }: 
         <div className="portal-card">
           {successMsg && <div className="portal-success">{successMsg}</div>}
           <form onSubmit={handleSubmit} className="portal-form">
+
+            {/* Reporter name */}
+            <label className="form-label">
+              Ihr Name <span className="form-required">*</span>
+              <input
+                type="text"
+                value={reporterName}
+                onChange={e => setReporterName(e.target.value)}
+                placeholder="Vor- und Nachname"
+                required
+                disabled={!selectedUnit}
+                autoComplete="name"
+              />
+            </label>
+
+            {/* Title */}
             <label className="form-label">
               {t("portalTitleLabel")}
               <input
@@ -110,6 +212,8 @@ export function TenantPortal({ units, tickets, onTicketCreated, onShowTicket }: 
                 disabled={!selectedUnit}
               />
             </label>
+
+            {/* Description */}
             <label className="form-label">
               {t("portalDescLabel")}
               <textarea
@@ -121,10 +225,70 @@ export function TenantPortal({ units, tickets, onTicketCreated, onShowTicket }: 
                 disabled={!selectedUnit}
               />
             </label>
+
+            {/* Availability calendar */}
+            <div className="form-label">
+              <span>{t("portalAvailability")}</span>
+              <p className="portal-hint" style={{ margin: "4px 0 8px" }}>
+                💡 {t("portalAvailabilityHint")}
+              </p>
+              <AvailabilityCalendar
+                selectedDates={availDates}
+                onChange={setAvailDates}
+                disabled={!selectedUnit}
+              />
+            </div>
+
+            {/* Image upload */}
+            <div className="form-label">
+              <span>Foto / Bild <span className="form-optional">(optional)</span></span>
+              {!imageData ? (
+                <div
+                  className={`upload-zone ${!selectedUnit ? "upload-zone-disabled" : ""}`}
+                  onClick={() => selectedUnit && fileInputRef.current?.click()}
+                  onDragOver={e => { e.preventDefault(); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    if (!selectedUnit) return;
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) {
+                      const dt = new DataTransfer();
+                      dt.items.add(file);
+                      if (fileInputRef.current) fileInputRef.current.files = dt.files;
+                      handleImageChange({ target: { files: dt.files } } as React.ChangeEvent<HTMLInputElement>);
+                    }
+                  }}
+                >
+                  <span className="upload-zone-icon">◫</span>
+                  <span className="upload-zone-text">Bild hierher ziehen oder <u>auswählen</u></span>
+                  <span className="upload-zone-hint">JPG, PNG, WEBP · max. 10 MB</span>
+                </div>
+              ) : (
+                <div className="upload-preview">
+                  <img src={imageData} alt="Vorschau" className="upload-preview-img" />
+                  <div className="upload-preview-info">
+                    <span className="upload-preview-name">◫ {imageName}</span>
+                    <button type="button" className="upload-preview-remove" onClick={removeImage}>
+                      ✕ Entfernen
+                    </button>
+                  </div>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleImageChange}
+                disabled={!selectedUnit}
+              />
+              {imageError && <p className="upload-error">{imageError}</p>}
+            </div>
+
             <button
               type="submit"
               className="btn btn-primary btn-full"
-              disabled={submitting || !selectedUnit || !title.trim() || !desc.trim()}
+              disabled={!canSubmit}
             >
               {submitting ? t("portalSubmitting") : t("portalSubmit")}
             </button>

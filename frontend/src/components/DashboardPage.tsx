@@ -1,8 +1,116 @@
+import { useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext";
 import type { Ticket, Technician } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
 const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+
+/* ─── Donut Chart ─── */
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  OPEN:        { label: "Offen",        color: "#638bff" },
+  ASSIGNED:    { label: "Zugewiesen",   color: "#b57bee" },
+  IN_PROGRESS: { label: "In Bearbeitung", color: "#f5a623" },
+  RESOLVED:    { label: "Gelöst",       color: "#3ecf8e" },
+  CLOSED:      { label: "Geschlossen",  color: "#525d6e" },
+};
+
+function DonutChart({ tickets, onNavigateTickets }: { tickets: Ticket[]; onNavigateTickets: (f: string) => void }) {
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  const counts = Object.fromEntries(
+    Object.keys(STATUS_META).map(s => [s, tickets.filter(t => t.status === s).length])
+  );
+  const total = tickets.length;
+
+  const R = 80;
+  const STROKE = 22;
+  const GAP = 2;
+  const circumference = 2 * Math.PI * R;
+
+  // Build segments
+  type Segment = { key: string; count: number; color: string; label: string; offset: number; dash: number };
+  const segments: Segment[] = [];
+  let runningOffset = 0;
+  // rotate so chart starts at top (−90°) → handled via transform on the <g>
+  for (const [key, meta] of Object.entries(STATUS_META)) {
+    const count = counts[key] ?? 0;
+    if (count === 0) continue;
+    const fraction = count / total;
+    const dash = fraction * circumference - GAP;
+    segments.push({ key, count, color: meta.color, label: meta.label, offset: runningOffset, dash });
+    runningOffset += fraction * circumference;
+  }
+
+  const activeSegment = hovered ? segments.find(s => s.key === hovered) : null;
+
+  return (
+    <div className="panel donut-panel">
+      <h3 className="panel-title" style={{ marginBottom: 18 }}>Status-Verteilung</h3>
+      {total === 0 ? (
+        <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>Keine Tickets vorhanden.</p>
+      ) : (
+        <div className="donut-wrap">
+          {/* SVG */}
+          <div className="donut-svg-wrap">
+            <svg viewBox="0 0 200 200" width="200" height="200" aria-label="Ticket-Status Donut-Chart">
+              {/* Track */}
+              <circle cx="100" cy="100" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={STROKE} />
+              {/* Segments */}
+              <g transform="rotate(-90 100 100)">
+                {segments.map(seg => (
+                  <circle
+                    key={seg.key}
+                    cx="100" cy="100" r={R}
+                    fill="none"
+                    stroke={seg.color}
+                    strokeWidth={hovered === seg.key ? STROKE + 5 : STROKE}
+                    strokeDasharray={`${seg.dash} ${circumference - seg.dash}`}
+                    strokeDashoffset={-seg.offset}
+                    strokeLinecap="round"
+                    style={{ cursor: "pointer", transition: "stroke-width 0.15s ease, opacity 0.15s ease", opacity: hovered && hovered !== seg.key ? 0.35 : 1 }}
+                    onMouseEnter={() => setHovered(seg.key)}
+                    onMouseLeave={() => setHovered(null)}
+                    onClick={() => onNavigateTickets(seg.key)}
+                  />
+                ))}
+              </g>
+              {/* Center label */}
+              {activeSegment ? (
+                <>
+                  <text x="100" y="93" textAnchor="middle" fontSize="26" fontWeight="700" fill={activeSegment.color}>{activeSegment.count}</text>
+                  <text x="100" y="113" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.5)">{activeSegment.label}</text>
+                </>
+              ) : (
+                <>
+                  <text x="100" y="93" textAnchor="middle" fontSize="32" fontWeight="700" fill="rgba(255,255,255,0.9)">{total}</text>
+                  <text x="100" y="113" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.4)">Total</text>
+                </>
+              )}
+            </svg>
+          </div>
+
+          {/* Legend */}
+          <div className="donut-legend">
+            {segments.map(seg => (
+              <button
+                key={seg.key}
+                className={`donut-legend-item ${hovered === seg.key ? "donut-legend-active" : ""}`}
+                onMouseEnter={() => setHovered(seg.key)}
+                onMouseLeave={() => setHovered(null)}
+                onClick={() => onNavigateTickets(seg.key)}
+              >
+                <span className="donut-legend-dot" style={{ background: seg.color }} />
+                <span className="donut-legend-label">{seg.label}</span>
+                <span className="donut-legend-count" style={{ color: seg.color }}>{seg.count}</span>
+                <span className="donut-legend-pct">{((seg.count / total) * 100).toFixed(0)}%</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Props {
   tickets: Ticket[];
@@ -134,30 +242,35 @@ export function DashboardPage({ tickets, technicians, onNavigateTickets, onNavig
         <div className="sla-ok-banner">✅ {t("dashNoEscalated")}</div>
       )}
 
-      <div className="dashboard-row">
-        {/* Priority Distribution */}
-        <div className="panel">
-          <h3 className="panel-title" style={{ marginBottom: 18 }}>{t("dashPriorityTitle")}</h3>
-          <div className="priority-dist">
-            {[
-              { label: "HIGH",   count: high,   color: "var(--danger)",  icon: "▲" },
-              { label: "MEDIUM", count: medium, color: "var(--warning)", icon: "●" },
-              { label: "LOW",    count: low,    color: "var(--success)", icon: "▼" },
-            ].map(row => (
-              <div key={row.label} className="priority-dist-row">
-                <span className="priority-dist-label" style={{ color: row.color }}>{row.icon} {row.label}</span>
-                <div className="priority-dist-bar-track">
-                  <div className="priority-dist-bar-fill"
-                    style={{ width: `${(row.count / maxPrio) * 100}%`, background: row.color }} />
+      {/* Main 2-col layout: left = Donut + Priority stacked, right = Recent Tickets */}
+      <div className="dashboard-main-cols">
+        {/* Left column */}
+        <div className="dashboard-left-col">
+          <DonutChart tickets={tickets} onNavigateTickets={onNavigateTickets} />
+
+          <div className="panel">
+            <h3 className="panel-title" style={{ marginBottom: 18 }}>{t("dashPriorityTitle")}</h3>
+            <div className="priority-dist">
+              {[
+                { label: "HIGH",   count: high,   color: "var(--danger)",  icon: "▲" },
+                { label: "MEDIUM", count: medium, color: "var(--warning)", icon: "●" },
+                { label: "LOW",    count: low,    color: "var(--success)", icon: "▼" },
+              ].map(row => (
+                <div key={row.label} className="priority-dist-row">
+                  <span className="priority-dist-label" style={{ color: row.color }}>{row.icon} {row.label}</span>
+                  <div className="priority-dist-bar-track">
+                    <div className="priority-dist-bar-fill"
+                      style={{ width: `${(row.count / maxPrio) * 100}%`, background: row.color }} />
+                  </div>
+                  <span className="priority-dist-count">{row.count}</span>
                 </div>
-                <span className="priority-dist-count">{row.count}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Recent Tickets */}
-        <div className="panel">
+        {/* Right column: Recent Tickets fills full height */}
+        <div className="panel dashboard-recent-col">
           <h3 className="panel-title" style={{ marginBottom: 18 }}>{t("dashRecentTitle")}</h3>
           {recent.length === 0 ? (
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>{t("dashNoTickets")}</p>

@@ -48,7 +48,12 @@ def create_ticket(data: TicketCreate, session: Session = Depends(get_session)) -
         SqlAlchemyTenantRepository(session),
     )
     try:
-        ticket = service.create_ticket(data.title, data.description, data.unit_id, data.tenant_id, data.priority)
+        full_description = (
+            f"Gemeldet von: {data.reporter_name}\n\n{data.description}"
+            if data.reporter_name
+            else data.description
+        )
+        ticket = service.create_ticket(data.title, full_description, data.unit_id, data.tenant_id, data.priority)
         _log(session, ticket.id, "CREATED")
         return _ticket_response(ticket)
     except NotFoundError as exc:

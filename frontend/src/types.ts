@@ -54,6 +54,7 @@ export interface TicketCreatePayload {
   unit_id: number;
   tenant_id?: number;
   priority?: TicketPriority;
+  reporter_name?: string;
 }
 
 export interface TicketHistory {

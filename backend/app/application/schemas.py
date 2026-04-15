@@ -49,10 +49,11 @@ class TechnicianRead(TechnicianCreate):
 
 class TicketCreate(BaseModel):
     title: str = Field(min_length=3, max_length=160)
-    description: str = Field(min_length=5, max_length=1000)
+    description: str = Field(min_length=5, max_length=200_000)
     unit_id: int
     tenant_id: Optional[int] = None
     priority: Optional[TicketPriority] = None  # None → auto-inferred from keywords
+    reporter_name: Optional[str] = Field(default=None, max_length=120)
 
 
 class TicketRead(BaseModel):

@@ -8,6 +8,10 @@ import { PropertiesPage } from "./components/PropertiesPage";
 import { AnalyticsPage } from "./components/AnalyticsPage";
 import { TenantPortal } from "./components/TenantPortal";
 import { AIChat } from "./components/AIChat";
+import { WartungsplanPage } from "./components/WartungsplanPage";
+import { DokumentePage } from "./components/DokumentePage";
+import { FinanzenPage } from "./components/FinanzenPage";
+import { BerichtePage } from "./components/BerichtePage";
 import { useLanguage } from "./i18n/LanguageContext";
 import type { Invoice, Property, Ticket, Technician, TicketCreatePayload, Tenant, Unit } from "./types";
 import {
@@ -73,10 +77,20 @@ function countSLAIssues(tickets: Ticket[]) {
 /* ─── Language Switcher ─── */
 function LangSwitcher() {
   const { lang, setLang } = useLanguage();
+  const langs: { code: Parameters<typeof setLang>[0]; flag: string; label: string }[] = [
+    { code: "de", flag: "🇩🇪", label: "DE" },
+    { code: "en", flag: "🇬🇧", label: "EN" },
+    { code: "fr", flag: "🇫🇷", label: "FR" },
+    { code: "it", flag: "🇮🇹", label: "IT" },
+  ];
   return (
     <div className="lang-switcher" role="group" aria-label="Language / Sprache">
-      <button className={`lang-btn ${lang === "de" ? "active" : ""}`} onClick={() => setLang("de")} aria-pressed={lang === "de"}>🇩🇪 DE</button>
-      <button className={`lang-btn ${lang === "en" ? "active" : ""}`} onClick={() => setLang("en")} aria-pressed={lang === "en"}>🇬🇧 EN</button>
+      {langs.map(l => (
+        <button key={l.code} className={`lang-btn ${lang === l.code ? "active" : ""}`}
+          onClick={() => setLang(l.code)} aria-pressed={lang === l.code}>
+          {l.flag} {l.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -115,7 +129,7 @@ function NotificationBell({ tickets }: { tickets: Ticket[] }) {
 }
 
 /* ─── Navigation ─── */
-type Page = "dashboard" | "tickets" | "analytics" | "portal" | "technicians" | "properties";
+type Page = "dashboard" | "tickets" | "analytics" | "portal" | "technicians" | "properties" | "wartungsplan" | "dokumente" | "finanzen" | "berichte";
 
 function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) => void }) {
   const { t } = useLanguage();
@@ -123,9 +137,13 @@ function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) =>
     { key: "dashboard",   label: t("navDashboard"),   icon: "◈" },
     { key: "tickets",     label: t("navTickets"),     icon: "◎" },
     { key: "analytics",   label: t("navAnalytics"),   icon: "◆" },
-    { key: "portal",      label: t("navPortal"),      icon: "🏠" },
-    { key: "technicians", label: t("navTechnicians"), icon: "◉" },
-    { key: "properties",  label: t("navProperties"),  icon: "⊞" },
+    { key: "portal",      label: t("navPortal"),      icon: "⌂" },
+    { key: "technicians",  label: t("navTechnicians"),  icon: "◉" },
+    { key: "properties",   label: t("navProperties"),   icon: "⊞" },
+    { key: "wartungsplan", label: "Wartungsplan",        icon: "◷" },
+    { key: "dokumente",    label: "Dokumente",           icon: "▤" },
+    { key: "finanzen",     label: "Finanzen",            icon: "⊠" },
+    { key: "berichte",     label: "Berichte",            icon: "▦" },
   ];
   return (
     <nav className="nav-bar" aria-label="Main navigation">
@@ -158,11 +176,117 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
   );
 }
 
+/* ─── Role Selection Screen ─── */
+type Role = "manager" | "tenant";
+
+function RoleSelect({ onSelect }: { onSelect: (r: Role) => void }) {
+  const [pinStep, setPinStep] = useState(false);
+  const [pin, setPin]         = useState("");
+  const [error, setError]     = useState(false);
+
+  const handleManagerClick = () => { setPinStep(true); setPin(""); setError(false); };
+
+  const handlePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pin === "777") { onSelect("manager"); }
+    else { setError(true); setPin(""); }
+  };
+
+  return (
+    <div className="role-select-screen">
+      <div className="role-select-card">
+        <div className="role-select-logo">◈</div>
+        <h1 className="role-select-title">Smart Property<br/>Maintenance System</h1>
+
+        {!pinStep ? (
+          <>
+            <p className="role-select-subtitle">Bitte wählen Sie Ihre Rolle</p>
+            <div className="role-select-options">
+              <button className="role-option role-option-manager" onClick={handleManagerClick}>
+                <span className="role-option-icon">◉</span>
+                <span className="role-option-label">Immobilienverwalter</span>
+                <span className="role-option-desc">Vollzugriff auf Tickets, Mieter, Techniker &amp; Analysen</span>
+              </button>
+              <button className="role-option role-option-tenant" onClick={() => onSelect("tenant")}>
+                <span className="role-option-icon">⌂</span>
+                <span className="role-option-label">Mieter</span>
+                <span className="role-option-desc">Eigene Tickets erstellen und Status verfolgen</span>
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="role-select-subtitle">Zugangscode eingeben</p>
+            <form onSubmit={handlePinSubmit} className="pin-form">
+              <input
+                className={`pin-input ${error ? "pin-input-error" : ""}`}
+                type="password"
+                inputMode="numeric"
+                maxLength={10}
+                value={pin}
+                onChange={e => { setPin(e.target.value); setError(false); }}
+                placeholder="Code"
+                autoFocus
+              />
+              {error && <p className="pin-error">Falscher Code. Bitte erneut versuchen.</p>}
+              <button type="submit" className="btn btn-primary btn-full" disabled={!pin}>
+                Anmelden
+              </button>
+              <button type="button" className="btn btn-ghost btn-full" onClick={() => setPinStep(false)}>
+                ← Zurück
+              </button>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Tenant Shell (stripped-down view) ─── */
+function TenantShell({
+  units, tickets, onTicketCreated, onExit,
+}: {
+  units: Unit[];
+  tickets: Ticket[];
+  onTicketCreated: () => void;
+  onExit: () => void;
+}) {
+  const { theme, toggle: toggleTheme } = useTheme();
+  return (
+    <main className="app-shell">
+      <header className="app-header">
+        <div className="header-brand">
+          <h1>⌂ Mieter-Portal</h1>
+          <p>Wartungsanfragen einreichen</p>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button className="theme-toggle" onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}>
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+          <button className="btn btn-ghost" onClick={onExit} title="Abmelden">
+            ← Abmelden
+          </button>
+        </div>
+      </header>
+      <TenantPortal
+        units={units}
+        tickets={tickets}
+        onTicketCreated={onTicketCreated}
+        onShowTicket={() => {/* Mieter sehen keine Admin-Detailansicht */}}
+      />
+    </main>
+  );
+}
+
 /* ─── Main App ─── */
 function App() {
   const { t, tf } = useLanguage();
   const { theme, toggle: toggleTheme } = useTheme();
 
+  const [role, setRole] = useState<Role | null>(null);
   const [activePage, setActivePage]         = useState<Page>("dashboard");
   const [tickets, setTickets]               = useState<Ticket[]>([]);
   const [technicians, setTechnicians]       = useState<Technician[]>([]);
@@ -260,6 +384,21 @@ function App() {
     setActivePage("tickets");
   };
 
+  /* ── Role gate ── */
+  if (role === null) return <RoleSelect onSelect={setRole} />;
+
+  if (role === "tenant") return (
+    <>
+      <TenantShell
+        units={units}
+        tickets={tickets}
+        onTicketCreated={() => loadTickets(filter || undefined)}
+        onExit={() => setRole(null)}
+      />
+      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+    </>
+  );
+
   return (
     <>
       <main className="app-shell">
@@ -278,6 +417,9 @@ function App() {
               {theme === "dark" ? "☀️" : "🌙"}
             </button>
             <LangSwitcher />
+            <button className="btn btn-ghost" onClick={() => setRole(null)} title="Abmelden">
+              ← Abmelden
+            </button>
           </div>
         </header>
 
@@ -346,6 +488,18 @@ function App() {
 
         {activePage === "properties" && (
           <PropertiesPage properties={properties} units={units} tenants={tenants} tickets={tickets} />
+        )}
+        {activePage === "wartungsplan" && (
+          <WartungsplanPage properties={properties} technicians={technicians} />
+        )}
+        {activePage === "dokumente" && (
+          <DokumentePage properties={properties} units={units} tenants={tenants} />
+        )}
+        {activePage === "finanzen" && (
+          <FinanzenPage tickets={tickets} properties={properties} />
+        )}
+        {activePage === "berichte" && (
+          <BerichtePage tickets={tickets} technicians={technicians} properties={properties} />
         )}
       </main>
 
