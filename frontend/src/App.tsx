@@ -12,7 +12,6 @@ import { WartungsplanPage } from "./components/WartungsplanPage";
 import { DokumentePage } from "./components/DokumentePage";
 import { FinanzenPage } from "./components/FinanzenPage";
 import { BerichtePage } from "./components/BerichtePage";
-import { QuickTicketPage } from "./components/QuickTicketPage";
 import { useLanguage } from "./i18n/LanguageContext";
 import type { Invoice, Property, Ticket, Technician, TicketCreatePayload, Tenant, Unit } from "./types";
 import {
@@ -130,7 +129,7 @@ function NotificationBell({ tickets }: { tickets: Ticket[] }) {
 }
 
 /* ─── Navigation ─── */
-type Page = "dashboard" | "tickets" | "analytics" | "portal" | "technicians" | "properties" | "wartungsplan" | "dokumente" | "finanzen" | "berichte";
+type Page = "dashboard" | "tickets" | "analytics" | "technicians" | "properties" | "wartungsplan" | "dokumente" | "finanzen" | "berichte";
 
 function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) => void }) {
   const { t } = useLanguage();
@@ -138,7 +137,6 @@ function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) =>
     { key: "dashboard",   label: t("navDashboard"),   icon: "◈" },
     { key: "tickets",     label: t("navTickets"),     icon: "◎" },
     { key: "analytics",   label: t("navAnalytics"),   icon: "◆" },
-    { key: "portal",      label: t("navPortal"),      icon: "⌂" },
     { key: "technicians",  label: t("navTechnicians"),  icon: "◉" },
     { key: "properties",   label: t("navProperties"),   icon: "⊞" },
     { key: "wartungsplan", label: "Wartungsplan",        icon: "◷" },
@@ -256,15 +254,26 @@ function TenantShell({
 }) {
   const { theme, toggle: toggleTheme } = useTheme();
   const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
-  const [idInput, setIdInput]           = useState("");
-  const [idError, setIdError]           = useState(false);
+  const [idInput, setIdInput] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const found = tenants.find(t => String(t.id) === idInput.trim());
-    if (found) { setActiveTenant(found); setIdError(false); }
-    else { setIdError(true); setIdInput(""); }
-  };
+    const trimmed = idInput.trim();
+    if (!trimmed) return;
+    // Try to find a real tenant by ID; if not found, create a demo guest
+    const found = tenants.find(t => String(t.id) === trimmed);
+    if (found) {
+      setActiveTenant(found);
+    } else {
+      // Demo mode: accept any numeric input, create a guest tenant
+      const demoUnit = units[0] ?? null;
+      setActiveTenant({
+        id: Number(trimmed) || 0,
+        name: `Demo-Mieter (ID ${trimmed})`,
+        unit_id: demoUnit?.id ?? 1,
+      } as Tenant);
+    }
+      };
 
   if (!activeTenant) {
     return (
@@ -275,16 +284,18 @@ function TenantShell({
           <p className="role-select-subtitle">Bitte geben Sie Ihre Mieter-ID ein</p>
           <form onSubmit={handleLogin} className="pin-form">
             <input
-              className={`pin-input ${idError ? "pin-input-error" : ""}`}
+              className="pin-input"
               type="text"
               inputMode="numeric"
               maxLength={10}
               value={idInput}
-              onChange={e => { setIdInput(e.target.value); setIdError(false); }}
-              placeholder="Mieter-ID"
+              onChange={e => setIdInput(e.target.value)}
+              placeholder="Mieter-ID (z.B. 1–20)"
               autoFocus
             />
-            {idError && <p className="pin-error">Mieter-ID nicht gefunden. Bitte erneut versuchen.</p>}
+            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", textAlign: "center", margin: "4px 0" }}>
+              Demo: Beliebige Zahl eingeben
+            </p>
             <button type="submit" className="btn btn-primary btn-full" disabled={!idInput}>
               Anmelden
             </button>
@@ -516,15 +527,6 @@ function App() {
         )}
 
         {activePage === "analytics" && <AnalyticsPage tickets={tickets} />}
-
-        {activePage === "portal" && (
-          <QuickTicketPage
-            tenants={tenants}
-            units={units}
-            tickets={tickets}
-            onTicketCreated={() => loadTickets(filter || undefined)}
-          />
-        )}
 
         {activePage === "technicians" && (
           <TechniciansPage technicians={technicians} tickets={tickets} />
