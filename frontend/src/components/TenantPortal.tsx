@@ -6,6 +6,28 @@ import { StatusBadge } from "./StatusBadge";
 
 const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
 
+/* ─── Auto-Priority Detection ─── */
+const HIGH_KEYWORDS = [
+  "notfall", "feuer", "brand", "gas", "gefahr", "dringend", "sofort", "notruf",
+  "rohrbruch", "kurzschluss", "einbruch", "überschwemmung", "ausfall", "kein wasser",
+  "kein strom", "kein gas", "ausser betrieb", "stecken", "sicherheitsrisiko",
+  "verletzt", "schimmel", "droh", "wasser läuft", "water leak", "emergency",
+  "danger", "urgent", "flood", "fire", "gas leak", "no water", "no electricity",
+  "urgence", "danger", "inondation", "urgenza", "pericolo",
+];
+const LOW_KEYWORDS = [
+  "farbe", "anstrich", "kratzer", "fleck", "kosmetisch", "routine", "streichen",
+  "tapete", "dekor", "ästhetisch", "schönheit", "cosmetic", "paint", "scratch",
+  "routine", "esthétique", "peinture", "cosmétique", "estetico", "pittura",
+];
+
+function autoDetectPriority(title: string, desc: string): "HIGH" | "MEDIUM" | "LOW" {
+  const text = (title + " " + desc).toLowerCase();
+  if (HIGH_KEYWORDS.some(k => text.includes(k))) return "HIGH";
+  if (LOW_KEYWORDS.some(k => text.includes(k))) return "LOW";
+  return "MEDIUM";
+}
+
 function getSLALabel(ticket: Ticket, t: (k: Parameters<ReturnType<typeof useLanguage>["t"]>[0]) => string): { label: string; cls: string } | null {
   if (ticket.status === "RESOLVED" || ticket.status === "CLOSED") return null;
   const slaH = SLA_HOURS[ticket.priority] ?? 24;
@@ -131,8 +153,8 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
 
   const [title, setTitle]           = useState("");
   const [desc, setDesc]             = useState("");
-  const [priority, setPriority]     = useState<"HIGH"|"MEDIUM"|"LOW">("MEDIUM");
   const [slots, setSlots]           = useState<AvailSlot[]>([{ ...EMPTY_SLOT }, { ...EMPTY_SLOT }, { ...EMPTY_SLOT }]);
+  const autoPriority = autoDetectPriority(title, desc);
   const [imageData, setImageData]   = useState<string | null>(null);
   const [imageName, setImageName]   = useState("");
   const [imageError, setImageError] = useState("");
@@ -157,7 +179,7 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
   };
 
   const resetForm = () => {
-    setTitle(""); setDesc(""); setPriority("MEDIUM");
+    setTitle(""); setDesc("");
     setSlots([{ ...EMPTY_SLOT }, { ...EMPTY_SLOT }, { ...EMPTY_SLOT }]);
     removeImage();
   };
@@ -174,10 +196,11 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
       const fullDesc = imageData
         ? `${desc.trim()}${availBlock}\n\n[BILD:${imageName}]\n${imageData}`
         : `${desc.trim()}${availBlock}`;
+      const detectedPriority = autoDetectPriority(title.trim(), desc.trim());
       const created = await createTicket({
         title: title.trim(), description: fullDesc,
         unit_id: tenant.unit_id, reporter_name: tenant.name,
-        priority: priority as "HIGH" | "MEDIUM" | "LOW",
+        priority: detectedPriority,
       });
       setConfirmedTicket({ id: (created as { id: number }).id ?? 0, title: title.trim() });
       resetForm(); onTicketCreated(); setView("confirm");
@@ -246,16 +269,19 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
             </label>
             <div className="form-label">
               <span>{t("portalPriority")}</span>
-              <div className="qt-priority-row" style={{ marginTop: 6 }}>
-                {(["HIGH","MEDIUM","LOW"] as const).map(p => (
-                  <button key={p} type="button"
-                    className={`qt-priority-btn ${priority === p ? "active" : ""}`}
-                    style={priority === p ? { borderColor: prioMeta[p].color, color: prioMeta[p].color, background: prioMeta[p].color + "18" } : {}}
-                    onClick={() => setPriority(p)}>
-                    <span style={{ fontWeight: 700 }}>{prioMeta[p].label}</span>
-                    <span style={{ fontSize: "0.7rem", opacity: 0.75 }}>{prioMeta[p].sub}</span>
-                  </button>
-                ))}
+              <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "5px 14px", borderRadius: 20, fontSize: "0.82rem", fontWeight: 600,
+                  border: `1.5px solid ${prioMeta[autoPriority].color}`,
+                  color: prioMeta[autoPriority].color,
+                  background: prioMeta[autoPriority].color + "18",
+                }}>
+                  {prioMeta[autoPriority].label}
+                </span>
+                <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  🤖 {autoPriority === "HIGH" ? "Notfall erkannt" : autoPriority === "LOW" ? "Routine erkannt" : "Wird automatisch ermittelt"}
+                </span>
               </div>
             </div>
           </div>

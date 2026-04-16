@@ -340,6 +340,106 @@ function TenantShell({
   );
 }
 
+/* ─── Static fallback demo data (used when backend is unreachable) ─── */
+const DEMO_TICKETS: Ticket[] = [
+  { id: 1,  title: "Heizungsausfall im Wohnzimmer",      description: "Die Heizung heizt nicht mehr. Notfall.", unit_id: 1,  tenant_id: 1,  technician_id: 2,         status: "RESOLVED",    priority: "HIGH",   created_at: "2025-10-01T10:00:00", updated_at: "2025-10-03T10:00:00" },
+  { id: 2,  title: "Fenster klemmt — Schlafzimmer",      description: "Das Schlafzimmerfenster lässt sich nicht öffnen.", unit_id: 2,  tenant_id: 2,  technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: "2026-02-01T10:00:00", updated_at: "2026-02-01T10:00:00" },
+  { id: 3,  title: "Sicherung springt dauernd raus",     description: "Sicherung fliegt mehrmals täglich raus.", unit_id: 3,  tenant_id: 3,  technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: "2026-02-08T10:00:00", updated_at: "2026-02-08T10:00:00" },
+  { id: 4,  title: "Stromausfall Küchensteckdose",       description: "Steckdose liefert keinen Strom. Kurzschluss.", unit_id: 4,  tenant_id: 4,  technician_id: 1,         status: "IN_PROGRESS", priority: "HIGH",   created_at: "2025-11-01T10:00:00", updated_at: "2025-11-03T10:00:00" },
+  { id: 5,  title: "Routinewartung Heizungsanlage",      description: "Jährliche Inspektion der Zentralheizung.", unit_id: 5,  tenant_id: 5,  technician_id: undefined, status: "OPEN",        priority: "LOW",    created_at: "2026-03-01T10:00:00", updated_at: "2026-03-01T10:00:00" },
+  { id: 6,  title: "Klimaanlage kühlt nicht mehr",       description: "Klimaanlage produziert keine Kühlung.", unit_id: 6,  tenant_id: 6,  technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: "2026-03-05T10:00:00", updated_at: "2026-03-05T10:00:00" },
+  { id: 7,  title: "Dachrinne verstopft",                description: "Dachrinne verstopft, Wasserschaden droht.", unit_id: 7,  tenant_id: 7,  technician_id: 6,         status: "ASSIGNED",    priority: "HIGH",   created_at: "2026-01-01T10:00:00", updated_at: "2026-01-03T10:00:00" },
+  { id: 8,  title: "Türschloss defekt — Haupteingang",   description: "Türschloss klemmt. Einbruchgefahr.", unit_id: 8,  tenant_id: 8,  technician_id: 3,         status: "IN_PROGRESS", priority: "HIGH",   created_at: "2025-11-10T10:00:00", updated_at: "2025-11-12T10:00:00" },
+  { id: 9,  title: "Aufzug ausser Betrieb",              description: "Aufzug bleibt stecken. Dringend reparieren.", unit_id: 9,  tenant_id: 9,  technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: "2026-03-10T10:00:00", updated_at: "2026-03-10T10:00:00" },
+  { id: 10, title: "Wasserhahn tropft im Bad",           description: "Wasserhahn tropft dauerhaft.", unit_id: 10, tenant_id: 10, technician_id: 2,         status: "ASSIGNED",    priority: "MEDIUM", created_at: "2026-01-14T10:00:00", updated_at: "2026-01-16T10:00:00" },
+  { id: 11, title: "Wandfarbe abgeblättert — Flur",      description: "Farbe im Eingangsflur blättert ab.", unit_id: 11, tenant_id: 11, technician_id: 4,         status: "CLOSED",      priority: "LOW",    created_at: "2025-10-11T10:00:00", updated_at: "2025-10-18T10:00:00" },
+  { id: 12, title: "Kein warmes Wasser seit 2 Tagen",   description: "Warmwasser funktioniert nicht. Kleinkind im Haushalt.", unit_id: 12, tenant_id: 12, technician_id: undefined, status: "OPEN",   priority: "HIGH",   created_at: "2026-04-04T10:00:00", updated_at: "2026-04-04T10:00:00" },
+  { id: 13, title: "Gehwegplatten locker",               description: "Gehwegplatten locker. Sturzgefahr.", unit_id: 13, tenant_id: 13, technician_id: 7,         status: "ASSIGNED",    priority: "MEDIUM", created_at: "2026-01-24T10:00:00", updated_at: "2026-01-26T10:00:00" },
+  { id: 14, title: "Feuchtigkeitsschaden im Keller",     description: "Wasser dringt durch Kellerwand. Schimmelgefahr.", unit_id: 14, tenant_id: 14, technician_id: undefined, status: "OPEN",    priority: "HIGH",   created_at: "2026-04-07T10:00:00", updated_at: "2026-04-07T10:00:00" },
+  { id: 15, title: "Lüftungsanlage defekt",              description: "Lüftung riecht verbrannt.", unit_id: 15, tenant_id: 15, technician_id: 5,         status: "IN_PROGRESS", priority: "HIGH",   created_at: "2025-12-01T10:00:00", updated_at: "2025-12-03T10:00:00" },
+  { id: 16, title: "Balkongeländer locker",              description: "Geländer wackelt — Sicherheitsrisiko.", unit_id: 16, tenant_id: 16, technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: "2026-04-11T10:00:00", updated_at: "2026-04-11T10:00:00" },
+  { id: 17, title: "Rohrbruch im Badezimmer",            description: "Rohr gebrochen, Wasser läuft auf den Boden.", unit_id: 17, tenant_id: 17, technician_id: 2,         status: "IN_PROGRESS", priority: "HIGH",  created_at: "2025-12-15T10:00:00", updated_at: "2025-12-17T10:00:00" },
+  { id: 18, title: "Storen (Jalousie) klemmt",           description: "Elektrische Storen lässt sich nicht hochfahren.", unit_id: 18, tenant_id: 18, technician_id: undefined, status: "OPEN",    priority: "MEDIUM", created_at: "2026-04-14T10:00:00", updated_at: "2026-04-14T10:00:00" },
+  { id: 19, title: "Gartentor defekt — Schloss kaputt",  description: "Schloss am Gartentor gebrochen.", unit_id: 19, tenant_id: 19, technician_id: 3,         status: "ASSIGNED",    priority: "MEDIUM", created_at: "2026-02-13T10:00:00", updated_at: "2026-02-15T10:00:00" },
+];
+
+const DEMO_PROPERTIES: Property[] = [
+  { id: 1, name: "Landmark Residences",      address: "Rosenweg 14, 3007 Bern" },
+  { id: 2, name: "Riverside Campus",         address: "Seeburgstrasse 12, 6006 Luzern" },
+  { id: 3, name: "Sunset Gardens",           address: "Via Cortivo 8, 6976 Castagnola-Lugano" },
+  { id: 4, name: "Zürichberg Residenz",      address: "Zürichbergstrasse 55, 8044 Zürich" },
+  { id: 5, name: "Seepark Nidwalden",        address: "Seestrasse 22, 6374 Buochs" },
+  { id: 6, name: "Rive du Lac",              address: "Quai du Général-Guisan 34, 1204 Genève" },
+  { id: 7, name: "Les Terrasses de Lausanne",address: "Avenue de la Gare 12, 1003 Lausanne" },
+];
+
+const DEMO_UNITS: Unit[] = [
+  { id: 1,  property_id: 1, name: "A1", floor: "EG" },
+  { id: 2,  property_id: 1, name: "A2", floor: "EG" },
+  { id: 3,  property_id: 1, name: "A3", floor: "1. OG" },
+  { id: 4,  property_id: 2, name: "B1", floor: "1. OG" },
+  { id: 5,  property_id: 2, name: "B2", floor: "2. OG" },
+  { id: 6,  property_id: 3, name: "C1", floor: "EG" },
+  { id: 7,  property_id: 3, name: "C2", floor: "1. OG" },
+  { id: 8,  property_id: 3, name: "C3", floor: "2. OG" },
+  { id: 9,  property_id: 4, name: "D1", floor: "1. OG" },
+  { id: 10, property_id: 4, name: "D2", floor: "2. OG" },
+  { id: 11, property_id: 4, name: "D3", floor: "Penthouse" },
+  { id: 12, property_id: 5, name: "E1", floor: "EG" },
+  { id: 13, property_id: 5, name: "E2", floor: "1. OG" },
+  { id: 14, property_id: 6, name: "F1", floor: "EG" },
+  { id: 15, property_id: 6, name: "F2", floor: "1. OG" },
+  { id: 16, property_id: 6, name: "F3", floor: "2. OG" },
+  { id: 17, property_id: 7, name: "G1", floor: "EG" },
+  { id: 18, property_id: 7, name: "G2", floor: "1. OG" },
+  { id: 19, property_id: 7, name: "G3", floor: "2. OG" },
+];
+
+const DEMO_TENANTS: Tenant[] = [
+  { id: 1,  name: "Mia Grün",            email: "mia.gruen@example.com",          unit_id: 1  },
+  { id: 2,  name: "Jonas Weber",          email: "jonas.weber@example.com",         unit_id: 2  },
+  { id: 3,  name: "Lena Fischer",         email: "lena.fischer@example.com",        unit_id: 3  },
+  { id: 4,  name: "Sara Klein",           email: "sara.klein@example.com",          unit_id: 4  },
+  { id: 5,  name: "Felix Braun",          email: "felix.braun@example.com",         unit_id: 5  },
+  { id: 6,  name: "Sophie Müller",        email: "sophie.mueller@example.com",      unit_id: 6  },
+  { id: 7,  name: "David Schneider",      email: "david.schneider@example.com",     unit_id: 7  },
+  { id: 8,  name: "Anna Bauer",           email: "anna.bauer@example.com",          unit_id: 8  },
+  { id: 9,  name: "Lukas Meier",          email: "lukas.meier@example.com",         unit_id: 9  },
+  { id: 10, name: "Nina Keller",          email: "nina.keller@example.com",         unit_id: 10 },
+  { id: 11, name: "Pascal Zimmermann",    email: "pascal.zimmermann@example.com",   unit_id: 11 },
+  { id: 12, name: "Ursula Gamma",         email: "ursula.gamma@example.com",        unit_id: 12 },
+  { id: 13, name: "Bruno Kälin",          email: "bruno.kaelin@example.com",        unit_id: 13 },
+  { id: 14, name: "Céline Dupont",        email: "celine.dupont@example.com",       unit_id: 14 },
+  { id: 15, name: "Marc Fontaine",        email: "marc.fontaine@example.com",       unit_id: 15 },
+  { id: 16, name: "Isabelle Rochat",      email: "isabelle.rochat@example.com",     unit_id: 16 },
+  { id: 17, name: "Nathalie Vidal",       email: "nathalie.vidal@example.com",      unit_id: 17 },
+  { id: 18, name: "Olivier Chevalier",    email: "olivier.chevalier@example.com",   unit_id: 18 },
+  { id: 19, name: "Camille Morel",        email: "camille.morel@example.com",       unit_id: 19 },
+];
+
+const DEMO_TECHNICIANS: Technician[] = [
+  { id: 1,  name: "Luka Novak",        expertise: "Elektrik Strom Kurzschluss Elektroinstallation Sicherung" },
+  { id: 2,  name: "Ivan Horvat",       expertise: "Sanitär Heizung Wasser Rohrbruch Warmwasser" },
+  { id: 3,  name: "Fabien Dupont",     expertise: "Schlosserei Türen Fenster Schloss Einbruch" },
+  { id: 4,  name: "Marco Bianchi",     expertise: "Allgemein Maler Wände Fliesen Renovierung" },
+  { id: 5,  name: "Tobias Keller",     expertise: "Klimaanlage Lüftung Klimatechnik Kühlung" },
+  { id: 6,  name: "Marko Kovač",       expertise: "Dach Dachdecker Abdichtung Dachrinne" },
+  { id: 7,  name: "Stéphane Laurent",  expertise: "Garten Aussenanlagen Grünfläche Gehweg" },
+  { id: 8,  name: "Reto Amstutz",      expertise: "Aufzug Lift Elevator Aufzugswartung" },
+  { id: 9,  name: "Lorenzo Russo",     expertise: "Solar Photovoltaik Solaranlage Energie" },
+  { id: 10, name: "Carlos Ibáñez",     expertise: "Maler Farbe Anstrich Tapete Fassade" },
+  { id: 11, name: "Yves Crettenand",   expertise: "Boden Parkett Laminat Fliesen Teppich" },
+  { id: 12, name: "Chiara Bernasconi", expertise: "IT Netzwerk Internet WLAN Smarthome" },
+  { id: 13, name: "Dominik Frei",      expertise: "Brandschutz Feuermelder Sprinkler Sicherheit" },
+  { id: 14, name: "Miguel Delgado",    expertise: "Storen Jalousie Rolladen Sonnenschutz" },
+  { id: 15, name: "Hannes Lüthi",      expertise: "Schreiner Holz Möbel Einbauschrank Treppe" },
+  { id: 16, name: "Pierre Maillard",   expertise: "Sanitärinstallation Wasserleitung Abfluss Rohr" },
+  { id: 17, name: "Giorgio Ferretti",  expertise: "Maurer Beton Mauerwerk Risse Keller" },
+  { id: 18, name: "Nicole Amstutz",    expertise: "Haustechnik Gebäudetechnik Automation Pumpe" },
+  { id: 19, name: "Alexei Volkov",     expertise: "Garage Garagentor Tiefgarage Schranke" },
+  { id: 20, name: "Dino Ferrari",      expertise: "Reinigung Hausreinigung Treppenhausreinigung" },
+];
+
 /* ─── Main App ─── */
 function App() {
   const { t, tf } = useLanguage();
@@ -364,10 +464,10 @@ function App() {
       const items = await fetchTickets(status || undefined);
       setTickets(items);
       setSelectedTicket(prev => prev ? items.find(i => i.id === prev.id) : undefined);
-    } catch (err) {
-      push("error", `${t("toastTicketsLoadError")}: ${err}`);
+    } catch {
+      setTickets(DEMO_TICKETS);
     }
-  }, [push, t]);
+  }, []);
 
   const loadInvoiceForTicket = async (ticketId: number) => {
     try { setInvoice(await fetchInvoiceByTicket(ticketId)); }
@@ -378,11 +478,11 @@ function App() {
     setLoading(true);
     Promise.all([
       loadTickets(filter || undefined),
-      fetchTechnicians().then(setTechnicians),
-      fetchUnits().then(setUnits),
-      fetchTenants().then(setTenants),
-      fetchProperties().then(setProperties),
-    ]).catch(err => push("error", String(err))).finally(() => setLoading(false));
+      fetchTechnicians().then(setTechnicians).catch(() => setTechnicians(DEMO_TECHNICIANS)),
+      fetchUnits().then(setUnits).catch(() => setUnits(DEMO_UNITS)),
+      fetchTenants().then(setTenants).catch(() => setTenants(DEMO_TENANTS)),
+      fetchProperties().then(setProperties).catch(() => setProperties(DEMO_PROPERTIES)),
+    ]).catch(() => {}).finally(() => setLoading(false));
   }, [filter]);
 
   const handleCreateTicket = async (payload: TicketCreatePayload) => {
