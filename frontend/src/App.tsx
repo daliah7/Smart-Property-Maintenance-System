@@ -243,30 +243,76 @@ function RoleSelect({ onSelect }: { onSelect: (r: Role) => void }) {
   );
 }
 
-/* ─── Tenant Shell (stripped-down view) ─── */
+/* ─── Tenant Shell (stripped-down view with Mieter-ID login) ─── */
 function TenantShell({
-  units, tickets, onTicketCreated, onExit,
+  units, tickets, tenants, onTicketCreated, onExit,
 }: {
   units: Unit[];
   tickets: Ticket[];
+  tenants: Tenant[];
   onTicketCreated: () => void;
   onExit: () => void;
 }) {
   const { theme, toggle: toggleTheme } = useTheme();
+  const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
+  const [idInput, setIdInput]           = useState("");
+  const [idError, setIdError]           = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const found = tenants.find(t => String(t.id) === idInput.trim());
+    if (found) { setActiveTenant(found); setIdError(false); }
+    else { setIdError(true); setIdInput(""); }
+  };
+
+  if (!activeTenant) {
+    return (
+      <div className="role-select-screen">
+        <div className="role-select-card">
+          <div className="role-select-logo">⌂</div>
+          <h1 className="role-select-title">Mieter-Portal</h1>
+          <p className="role-select-subtitle">Bitte geben Sie Ihre Mieter-ID ein</p>
+          <form onSubmit={handleLogin} className="pin-form">
+            <input
+              className={`pin-input ${idError ? "pin-input-error" : ""}`}
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              value={idInput}
+              onChange={e => { setIdInput(e.target.value); setIdError(false); }}
+              placeholder="Mieter-ID"
+              autoFocus
+            />
+            {idError && <p className="pin-error">Mieter-ID nicht gefunden. Bitte erneut versuchen.</p>}
+            <button type="submit" className="btn btn-primary btn-full" disabled={!idInput}>
+              Anmelden
+            </button>
+            <button type="button" className="btn btn-ghost btn-full" onClick={onExit}>
+              ← Zurück zur Rollenauswahl
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  const tenantUnit = units.find(u => u.id === activeTenant.unit_id);
+
   return (
     <main className="app-shell">
       <header className="app-header">
         <div className="header-brand">
           <h1>⌂ Mieter-Portal</h1>
-          <p>Wartungsanfragen einreichen</p>
+          <p>Willkommen, {activeTenant.name}{tenantUnit ? ` · ${tenantUnit.name}` : ""}</p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <LangSwitcher />
           <button className="theme-toggle" onClick={toggleTheme}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             title={theme === "dark" ? "Light mode" : "Dark mode"}>
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
-          <button className="btn btn-ghost" onClick={onExit} title="Abmelden">
+          <button className="btn btn-ghost" onClick={() => setActiveTenant(null)} title="Abmelden">
             ← Abmelden
           </button>
         </div>
@@ -274,8 +320,9 @@ function TenantShell({
       <TenantPortal
         units={units}
         tickets={tickets}
+        tenant={activeTenant}
         onTicketCreated={onTicketCreated}
-        onShowTicket={() => {/* Mieter sehen keine Admin-Detailansicht */}}
+        onShowTicket={() => {}}
       />
     </main>
   );
@@ -392,6 +439,7 @@ function App() {
       <TenantShell
         units={units}
         tickets={tickets}
+        tenants={tenants}
         onTicketCreated={() => loadTickets(filter || undefined)}
         onExit={() => setRole(null)}
       />
@@ -466,20 +514,34 @@ function App() {
           </div>
         )}
 
-        {activePage === "analytics" && <AnalyticsPage />}
+        {activePage === "analytics" && <AnalyticsPage tickets={tickets} />}
 
         {activePage === "portal" && (
-          <TenantPortal
-            units={units}
-            tickets={tickets}
-            onTicketCreated={() => loadTickets(filter || undefined)}
-            onShowTicket={ticket => {
-              setSelectedTicket(ticket);
-              setInvoice(undefined);
-              loadInvoiceForTicket(ticket.id);
-              setActivePage("tickets");
-            }}
-          />
+          <div className="page-container">
+            <div className="page-header">
+              <div>
+                <h2 className="page-title">⌂ Mieter-Portal</h2>
+                <p className="page-subtitle">Das Portal ist für Mieter verfügbar. Mieter melden sich mit ihrer Mieter-ID an.</p>
+              </div>
+            </div>
+            <div className="panel" style={{ textAlign: "center", padding: "40px 24px" }}>
+              <div style={{ fontSize: "2.5rem", marginBottom: 16, opacity: 0.5 }}>⌂</div>
+              <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: 20 }}>
+                Mieter können sich über die Rollenauswahl als <strong>Mieter</strong> anmelden und mit ihrer Mieter-ID auf das Portal zugreifen.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+                {tenants.slice(0, 6).map(tn => {
+                  const u = units.find(u => u.id === tn.unit_id);
+                  return (
+                    <div key={tn.id} style={{ background: "var(--bg-input)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "12px 16px", fontSize: "0.82rem" }}>
+                      <div style={{ fontWeight: 600 }}>{tn.name}</div>
+                      <div style={{ color: "var(--text-muted)" }}>ID: {tn.id} · {u?.name ?? "—"}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         )}
 
         {activePage === "technicians" && (
