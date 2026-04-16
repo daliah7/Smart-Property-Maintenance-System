@@ -59,7 +59,7 @@ function useTheme() {
 }
 
 /* ─── SLA helpers for notification bell ─── */
-const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+const SLA_HOURS: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
 
 function countSLAIssues(tickets: Ticket[]) {
   let escalated = 0, atRisk = 0;
@@ -204,12 +204,10 @@ function RoleSelect({ onSelect }: { onSelect: (r: Role) => void }) {
               <button className="role-option role-option-manager" onClick={handleManagerClick}>
                 <span className="role-option-icon">◉</span>
                 <span className="role-option-label">Immobilienverwalter</span>
-                <span className="role-option-desc">Vollzugriff auf Tickets, Mieter, Techniker &amp; Analysen</span>
               </button>
               <button className="role-option role-option-tenant" onClick={() => onSelect("tenant")}>
                 <span className="role-option-icon">⌂</span>
                 <span className="role-option-label">Mieter</span>
-                <span className="role-option-desc">Eigene Tickets erstellen und Status verfolgen</span>
               </button>
             </div>
           </>
@@ -341,26 +339,36 @@ function TenantShell({
 }
 
 /* ─── Static fallback demo data (used when backend is unreachable) ─── */
+const hAgo = (h: number) => new Date(Date.now() - h * 3_600_000).toISOString();
+const dAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
+
 const DEMO_TICKETS: Ticket[] = [
-  { id: 1,  title: "Heizungsausfall im Wohnzimmer",      description: "Die Heizung heizt nicht mehr. Notfall.", unit_id: 1,  tenant_id: 1,  technician_id: 2,         status: "RESOLVED",    priority: "HIGH",   created_at: "2025-10-01T10:00:00", updated_at: "2025-10-03T10:00:00" },
-  { id: 2,  title: "Fenster klemmt — Schlafzimmer",      description: "Das Schlafzimmerfenster lässt sich nicht öffnen.", unit_id: 2,  tenant_id: 2,  technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: "2026-02-01T10:00:00", updated_at: "2026-02-01T10:00:00" },
-  { id: 3,  title: "Sicherung springt dauernd raus",     description: "Sicherung fliegt mehrmals täglich raus.", unit_id: 3,  tenant_id: 3,  technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: "2026-02-08T10:00:00", updated_at: "2026-02-08T10:00:00" },
-  { id: 4,  title: "Stromausfall Küchensteckdose",       description: "Steckdose liefert keinen Strom. Kurzschluss.", unit_id: 4,  tenant_id: 4,  technician_id: 1,         status: "IN_PROGRESS", priority: "HIGH",   created_at: "2025-11-01T10:00:00", updated_at: "2025-11-03T10:00:00" },
-  { id: 5,  title: "Routinewartung Heizungsanlage",      description: "Jährliche Inspektion der Zentralheizung.", unit_id: 5,  tenant_id: 5,  technician_id: undefined, status: "OPEN",        priority: "LOW",    created_at: "2026-03-01T10:00:00", updated_at: "2026-03-01T10:00:00" },
-  { id: 6,  title: "Klimaanlage kühlt nicht mehr",       description: "Klimaanlage produziert keine Kühlung.", unit_id: 6,  tenant_id: 6,  technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: "2026-03-05T10:00:00", updated_at: "2026-03-05T10:00:00" },
-  { id: 7,  title: "Dachrinne verstopft",                description: "Dachrinne verstopft, Wasserschaden droht.", unit_id: 7,  tenant_id: 7,  technician_id: 6,         status: "ASSIGNED",    priority: "HIGH",   created_at: "2026-01-01T10:00:00", updated_at: "2026-01-03T10:00:00" },
-  { id: 8,  title: "Türschloss defekt — Haupteingang",   description: "Türschloss klemmt. Einbruchgefahr.", unit_id: 8,  tenant_id: 8,  technician_id: 3,         status: "IN_PROGRESS", priority: "HIGH",   created_at: "2025-11-10T10:00:00", updated_at: "2025-11-12T10:00:00" },
-  { id: 9,  title: "Aufzug ausser Betrieb",              description: "Aufzug bleibt stecken. Dringend reparieren.", unit_id: 9,  tenant_id: 9,  technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: "2026-03-10T10:00:00", updated_at: "2026-03-10T10:00:00" },
-  { id: 10, title: "Wasserhahn tropft im Bad",           description: "Wasserhahn tropft dauerhaft.", unit_id: 10, tenant_id: 10, technician_id: 2,         status: "ASSIGNED",    priority: "MEDIUM", created_at: "2026-01-14T10:00:00", updated_at: "2026-01-16T10:00:00" },
-  { id: 11, title: "Wandfarbe abgeblättert — Flur",      description: "Farbe im Eingangsflur blättert ab.", unit_id: 11, tenant_id: 11, technician_id: 4,         status: "CLOSED",      priority: "LOW",    created_at: "2025-10-11T10:00:00", updated_at: "2025-10-18T10:00:00" },
-  { id: 12, title: "Kein warmes Wasser seit 2 Tagen",   description: "Warmwasser funktioniert nicht. Kleinkind im Haushalt.", unit_id: 12, tenant_id: 12, technician_id: undefined, status: "OPEN",   priority: "HIGH",   created_at: "2026-04-04T10:00:00", updated_at: "2026-04-04T10:00:00" },
-  { id: 13, title: "Gehwegplatten locker",               description: "Gehwegplatten locker. Sturzgefahr.", unit_id: 13, tenant_id: 13, technician_id: 7,         status: "ASSIGNED",    priority: "MEDIUM", created_at: "2026-01-24T10:00:00", updated_at: "2026-01-26T10:00:00" },
-  { id: 14, title: "Feuchtigkeitsschaden im Keller",     description: "Wasser dringt durch Kellerwand. Schimmelgefahr.", unit_id: 14, tenant_id: 14, technician_id: undefined, status: "OPEN",    priority: "HIGH",   created_at: "2026-04-07T10:00:00", updated_at: "2026-04-07T10:00:00" },
-  { id: 15, title: "Lüftungsanlage defekt",              description: "Lüftung riecht verbrannt.", unit_id: 15, tenant_id: 15, technician_id: 5,         status: "IN_PROGRESS", priority: "HIGH",   created_at: "2025-12-01T10:00:00", updated_at: "2025-12-03T10:00:00" },
-  { id: 16, title: "Balkongeländer locker",              description: "Geländer wackelt — Sicherheitsrisiko.", unit_id: 16, tenant_id: 16, technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: "2026-04-11T10:00:00", updated_at: "2026-04-11T10:00:00" },
-  { id: 17, title: "Rohrbruch im Badezimmer",            description: "Rohr gebrochen, Wasser läuft auf den Boden.", unit_id: 17, tenant_id: 17, technician_id: 2,         status: "IN_PROGRESS", priority: "HIGH",  created_at: "2025-12-15T10:00:00", updated_at: "2025-12-17T10:00:00" },
-  { id: 18, title: "Storen (Jalousie) klemmt",           description: "Elektrische Storen lässt sich nicht hochfahren.", unit_id: 18, tenant_id: 18, technician_id: undefined, status: "OPEN",    priority: "MEDIUM", created_at: "2026-04-14T10:00:00", updated_at: "2026-04-14T10:00:00" },
-  { id: 19, title: "Gartentor defekt — Schloss kaputt",  description: "Schloss am Gartentor gebrochen.", unit_id: 19, tenant_id: 19, technician_id: 3,         status: "ASSIGNED",    priority: "MEDIUM", created_at: "2026-02-13T10:00:00", updated_at: "2026-02-15T10:00:00" },
+  // ── 3 HIGH OPEN: overdue 1–7 h (well within user's requested range) ──
+  { id: 1,  title: "Kein warmes Wasser — Notfall",        description: "Warmwasser ausgefallen, Kleinkind im Haushalt.", unit_id: 12, tenant_id: 12, technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: hAgo(25), updated_at: hAgo(25) },
+  { id: 2,  title: "Stromausfall Küchensteckdose",        description: "Steckdose liefert keinen Strom. Kurzschluss.", unit_id: 4,  tenant_id: 4,  technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: hAgo(28), updated_at: hAgo(28) },
+  { id: 3,  title: "Aufzug ausser Betrieb",               description: "Aufzug bleibt zwischen EG und 1. OG stecken.", unit_id: 9,  tenant_id: 9,  technician_id: undefined, status: "OPEN",        priority: "HIGH",   created_at: hAgo(31), updated_at: hAgo(31) },
+  // ── OPEN non-overdue ──
+  { id: 4,  title: "Klimaanlage kühlt nicht mehr",        description: "Klimaanlage produziert keine Kühlung.", unit_id: 6,  tenant_id: 6,  technician_id: undefined, status: "OPEN",        priority: "MEDIUM", created_at: dAgo(2),  updated_at: dAgo(2)  },
+  { id: 5,  title: "Storen (Jalousie) klemmt",            description: "Elektrische Storen lässt sich nicht hochfahren.", unit_id: 18, tenant_id: 18, technician_id: undefined, status: "OPEN",   priority: "LOW",    created_at: dAgo(5),  updated_at: dAgo(5)  },
+  // ── ASSIGNED: HIGH at risk (~80 %) ──
+  { id: 6,  title: "Feuchtigkeitsschaden im Keller",      description: "Wasser dringt durch Kellerwand. Schimmelgefahr.", unit_id: 14, tenant_id: 14, technician_id: 17, status: "ASSIGNED",    priority: "HIGH",   created_at: hAgo(20), updated_at: hAgo(19) },
+  { id: 7,  title: "Balkongeländer locker",               description: "Geländer wackelt stark — Sicherheitsrisiko.", unit_id: 16, tenant_id: 16, technician_id: 3,  status: "ASSIGNED",    priority: "HIGH",   created_at: hAgo(18), updated_at: hAgo(17) },
+  // ── ASSIGNED: within SLA ──
+  { id: 8,  title: "Dachrinne verstopft",                 description: "Dachrinne verstopft, Wasserschaden droht.", unit_id: 7,  tenant_id: 7,  technician_id: 6,  status: "ASSIGNED",    priority: "MEDIUM", created_at: dAgo(3),  updated_at: dAgo(3)  },
+  { id: 9,  title: "Wasserhahn tropft im Bad",            description: "Wasserhahn im Badezimmer tropft dauerhaft.", unit_id: 10, tenant_id: 10, technician_id: 2,  status: "ASSIGNED",    priority: "MEDIUM", created_at: dAgo(4),  updated_at: dAgo(4)  },
+  { id: 10, title: "Gehwegplatten locker — Sturzgefahr", description: "Gehwegplatten vor dem Seeeingang locker.", unit_id: 13, tenant_id: 13, technician_id: 7,  status: "ASSIGNED",    priority: "MEDIUM", created_at: dAgo(1),  updated_at: dAgo(1)  },
+  { id: 11, title: "Türschloss defekt — Haupteingang",   description: "Türschloss klemmt. Einbruchgefahr.", unit_id: 8,  tenant_id: 8,  technician_id: 1,  status: "ASSIGNED",    priority: "HIGH",   created_at: hAgo(12), updated_at: hAgo(11) },
+  { id: 12, title: "Gartentor — Schloss kaputt",          description: "Schloss am Gartentor gebrochen.", unit_id: 19, tenant_id: 19, technician_id: 14, status: "ASSIGNED",    priority: "LOW",    created_at: dAgo(7),  updated_at: dAgo(7)  },
+  // ── IN_PROGRESS ──
+  { id: 13, title: "Lüftungsanlage defekt",               description: "Lüftung macht laute Geräusche und riecht verbrannt.", unit_id: 15, tenant_id: 15, technician_id: 5, status: "IN_PROGRESS", priority: "HIGH", created_at: hAgo(8),  updated_at: hAgo(7)  },
+  { id: 14, title: "Heizungsausfall im Wohnzimmer",       description: "Die Heizung heizt seit gestern nicht mehr.", unit_id: 1,  tenant_id: 1,  technician_id: 2,  status: "IN_PROGRESS", priority: "HIGH", created_at: hAgo(15), updated_at: hAgo(14) },
+  { id: 15, title: "Rohrbruch im Badezimmer",             description: "Rohr unter Waschbecken gebrochen, Wasser läuft.", unit_id: 17, tenant_id: 17, technician_id: 16, status: "IN_PROGRESS", priority: "HIGH", created_at: hAgo(10), updated_at: hAgo(9) },
+  { id: 16, title: "Sicherung springt raus",              description: "Sicherung für Zimmer 2 fliegt täglich raus.", unit_id: 3,  tenant_id: 3,  technician_id: 9,  status: "IN_PROGRESS", priority: "MEDIUM", created_at: dAgo(2), updated_at: dAgo(1)  },
+  // ── RESOLVED (SLA mostly met) ──
+  { id: 17, title: "Fenster klemmt — Schlafzimmer",       description: "Schlafzimmerfenster lässt sich nicht öffnen.", unit_id: 2,  tenant_id: 2,  technician_id: 3,  status: "RESOLVED",    priority: "MEDIUM", created_at: dAgo(30), updated_at: dAgo(28) },
+  { id: 18, title: "Spielplatz-Rutsche locker",            description: "Befestigung der Rutsche muss geprüft werden.", unit_id: 11, tenant_id: 11, technician_id: 4,  status: "RESOLVED",    priority: "LOW",    created_at: dAgo(45), updated_at: dAgo(33) },
+  // ── CLOSED ──
+  { id: 19, title: "Wandfarbe abgeblättert — Flur",        description: "Farbe im Eingangsflur blättert grossflächig ab.", unit_id: 5,  tenant_id: 5,  technician_id: 10, status: "CLOSED",      priority: "LOW",    created_at: dAgo(60), updated_at: dAgo(53) },
 ];
 
 const DEMO_PROPERTIES: Property[] = [
@@ -374,25 +382,25 @@ const DEMO_PROPERTIES: Property[] = [
 ];
 
 const DEMO_UNITS: Unit[] = [
-  { id: 1,  property_id: 1, name: "A1", floor: "EG" },
-  { id: 2,  property_id: 1, name: "A2", floor: "EG" },
-  { id: 3,  property_id: 1, name: "A3", floor: "1. OG" },
-  { id: 4,  property_id: 2, name: "B1", floor: "1. OG" },
-  { id: 5,  property_id: 2, name: "B2", floor: "2. OG" },
-  { id: 6,  property_id: 3, name: "C1", floor: "EG" },
-  { id: 7,  property_id: 3, name: "C2", floor: "1. OG" },
-  { id: 8,  property_id: 3, name: "C3", floor: "2. OG" },
-  { id: 9,  property_id: 4, name: "D1", floor: "1. OG" },
-  { id: 10, property_id: 4, name: "D2", floor: "2. OG" },
-  { id: 11, property_id: 4, name: "D3", floor: "Penthouse" },
-  { id: 12, property_id: 5, name: "E1", floor: "EG" },
-  { id: 13, property_id: 5, name: "E2", floor: "1. OG" },
-  { id: 14, property_id: 6, name: "F1", floor: "EG" },
-  { id: 15, property_id: 6, name: "F2", floor: "1. OG" },
-  { id: 16, property_id: 6, name: "F3", floor: "2. OG" },
-  { id: 17, property_id: 7, name: "G1", floor: "EG" },
-  { id: 18, property_id: 7, name: "G2", floor: "1. OG" },
-  { id: 19, property_id: 7, name: "G3", floor: "2. OG" },
+  { id: 1,  property_id: 1, name: "A1", floor: "EG",        sqm: 68,  rooms: 3 },
+  { id: 2,  property_id: 1, name: "A2", floor: "EG",        sqm: 72,  rooms: 3 },
+  { id: 3,  property_id: 1, name: "A3", floor: "1. OG",     sqm: 85,  rooms: 4 },
+  { id: 4,  property_id: 2, name: "B1", floor: "1. OG",     sqm: 55,  rooms: 2 },
+  { id: 5,  property_id: 2, name: "B2", floor: "2. OG",     sqm: 60,  rooms: 2 },
+  { id: 6,  property_id: 3, name: "C1", floor: "EG",        sqm: 90,  rooms: 4 },
+  { id: 7,  property_id: 3, name: "C2", floor: "1. OG",     sqm: 78,  rooms: 3 },
+  { id: 8,  property_id: 3, name: "C3", floor: "2. OG",     sqm: 78,  rooms: 3 },
+  { id: 9,  property_id: 4, name: "D1", floor: "1. OG",     sqm: 65,  rooms: 3 },
+  { id: 10, property_id: 4, name: "D2", floor: "2. OG",     sqm: 70,  rooms: 3 },
+  { id: 11, property_id: 4, name: "D3", floor: "Penthouse",  sqm: 130, rooms: 5 },
+  { id: 12, property_id: 5, name: "E1", floor: "EG",        sqm: 48,  rooms: 2 },
+  { id: 13, property_id: 5, name: "E2", floor: "1. OG",     sqm: 52,  rooms: 2 },
+  { id: 14, property_id: 6, name: "F1", floor: "EG",        sqm: 82,  rooms: 4 },
+  { id: 15, property_id: 6, name: "F2", floor: "1. OG",     sqm: 82,  rooms: 4 },
+  { id: 16, property_id: 6, name: "F3", floor: "2. OG",     sqm: 76,  rooms: 3 },
+  { id: 17, property_id: 7, name: "G1", floor: "EG",        sqm: 58,  rooms: 2 },
+  { id: 18, property_id: 7, name: "G2", floor: "1. OG",     sqm: 62,  rooms: 3 },
+  { id: 19, property_id: 7, name: "G3", floor: "2. OG",     sqm: 62,  rooms: 3 },
 ];
 
 const DEMO_TENANTS: Tenant[] = [
@@ -626,7 +634,7 @@ function App() {
           </div>
         )}
 
-        {activePage === "analytics" && <AnalyticsPage tickets={tickets} />}
+        {activePage === "analytics" && <AnalyticsPage tickets={tickets} units={units} properties={properties} />}
 
         {activePage === "technicians" && (
           <TechniciansPage technicians={technicians} tickets={tickets} />
@@ -636,13 +644,13 @@ function App() {
           <PropertiesPage properties={properties} units={units} tenants={tenants} tickets={tickets} />
         )}
         {activePage === "wartungsplan" && (
-          <WartungsplanPage properties={properties} technicians={technicians} />
+          <WartungsplanPage properties={properties} technicians={technicians} tickets={tickets} />
         )}
         {activePage === "dokumente" && (
           <DokumentePage properties={properties} units={units} tenants={tenants} />
         )}
         {activePage === "finanzen" && (
-          <FinanzenPage tickets={tickets} properties={properties} />
+          <FinanzenPage tickets={tickets} properties={properties} technicians={technicians} units={units} />
         )}
         {activePage === "berichte" && (
           <BerichtePage tickets={tickets} technicians={technicians} properties={properties} />

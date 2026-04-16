@@ -4,7 +4,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { Ticket, Tenant, Unit } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
-const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+const SLA_HOURS: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
 
 /* ─── Auto-Priority Detection ─── */
 const HIGH_KEYWORDS = [
@@ -159,6 +159,7 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
   const [imageName, setImageName]   = useState("");
   const [imageError, setImageError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [reschedSlots, setReschedSlots] = useState<AvailSlot[]>([{ ...EMPTY_SLOT }, { ...EMPTY_SLOT }, { ...EMPTY_SLOT }]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -188,6 +189,7 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
     e.preventDefault();
     if (!title.trim() || !desc.trim()) return;
     setSubmitting(true);
+    setSubmitError("");
     try {
       const filledSlots = slots.filter(s => s.date && s.time);
       const availBlock = filledSlots.length > 0
@@ -204,7 +206,11 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
       });
       setConfirmedTicket({ id: (created as { id: number }).id ?? 0, title: title.trim() });
       resetForm(); onTicketCreated(); setView("confirm");
-    } finally { setSubmitting(false); }
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Ticket konnte nicht erstellt werden. Bitte erneut versuchen.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const prioMeta = {
@@ -317,6 +323,11 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleImageChange} />
             {imageError && <p className="upload-error">{imageError}</p>}
           </div>
+          {submitError && (
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: "var(--danger-bg, #fee)", border: "1px solid var(--danger)", color: "var(--danger)", fontSize: "0.85rem", marginBottom: 4 }}>
+              ⚠ {submitError}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10 }}>
             <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting || !title.trim() || !desc.trim()}>
               {submitting ? t("portalSubmittingBtn") : t("portalSubmitBtn")}
@@ -375,6 +386,9 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
         <div className="portal-ticket-list">
           {myTickets.map(ticket => {
             const sla = getSLALabel(ticket, t);
+            const prioColors: Record<string, string> = { HIGH: "var(--danger)", MEDIUM: "var(--warning)", LOW: "var(--success)" };
+            const prioLabels: Record<string, string> = { HIGH: t("portalPrioHigh"), MEDIUM: t("portalPrioMedium"), LOW: t("portalPrioLow") };
+            const pColor = prioColors[ticket.priority] ?? "var(--text-muted)";
             return (
               <button key={ticket.id} className="portal-ticket-item"
                 onClick={() => { setDetailTicket(ticket); setView("detail"); }}>
@@ -384,6 +398,10 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
                 </div>
                 <div className="portal-ticket-meta">
                   <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>#{ticket.id}</span>
+                  <span style={{ color: "var(--border)" }}>·</span>
+                  <span style={{ fontSize: "0.7rem", fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: pColor + "18", color: pColor, border: `1px solid ${pColor}33` }}>
+                    {prioLabels[ticket.priority] ?? ticket.priority}
+                  </span>
                   <span style={{ color: "var(--border)" }}>·</span>
                   <span style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}>{formatDate(ticket.created_at)}</span>
                   {sla && <span className={`sla-badge-small ${sla.cls}`}>{sla.label}</span>}

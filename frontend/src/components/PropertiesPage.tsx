@@ -63,6 +63,8 @@ export function PropertiesPage({ properties, units, tenants, tickets }: Props) {
                       <div className="unit-row-left">
                         <span className="unit-badge">{unit.name}</span>
                         <span className="unit-floor">{t("propFloor")} {unit.floor}</span>
+                        {unit.sqm && <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{unit.sqm} m²</span>}
+                        {unit.rooms && <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>{unit.rooms} Zi.</span>}
                       </div>
                       <div className="unit-row-mid">
                         {tenant ? (

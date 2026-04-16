@@ -24,6 +24,8 @@ export interface Unit {
   property_id: number;
   name: string;
   floor: string;
+  sqm?: number;
+  rooms?: number;
 }
 
 export interface Tenant {

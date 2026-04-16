@@ -1,34 +1,78 @@
 import { useEffect, useState } from "react";
 import { fetchAnalytics } from "../api";
 import { useLanguage } from "../i18n/LanguageContext";
-import type { AnalyticsData, Ticket } from "../types";
+import type { AnalyticsData, Ticket, Unit, Property } from "../types";
+
+/* ─── Compute analytics client-side (fallback when backend is offline) ─── */
+const SLA_H: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
+
+function computeAnalytics(tickets: Ticket[], units: Unit[], properties: Property[]): AnalyticsData {
+  const now = Date.now();
+  const months: Record<string, number> = {};
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth() - i);
+    months[d.toISOString().slice(0, 7)] = 0;
+  }
+  for (const tk of tickets) {
+    const m = tk.created_at.slice(0, 7);
+    if (m in months) months[m]++;
+  }
+  const monthly_trend = Object.entries(months).map(([month, count]) => ({ month, count }));
+
+  let slaOk = 0, slaTotal = 0, escalated = 0, atRisk = 0;
+  for (const tk of tickets) {
+    const slaH = SLA_H[tk.priority] ?? 24;
+    const elapsedH = (now - new Date(tk.created_at).getTime()) / 3600000;
+    if (tk.status === "RESOLVED" || tk.status === "CLOSED") {
+      slaTotal++;
+      const resH = (new Date(tk.updated_at).getTime() - new Date(tk.created_at).getTime()) / 3600000;
+      if (resH <= slaH) slaOk++;
+    } else {
+      if (elapsedH > slaH) escalated++;
+      else if (elapsedH > slaH * 0.8) atRisk++;
+    }
+  }
+  const sla_compliance_pct = slaTotal > 0 ? Math.round((slaOk / slaTotal) * 100) : 100;
+
+  const doneTickets = tickets.filter(tk => tk.status === "RESOLVED" || tk.status === "CLOSED");
+  const avg_resolution_hours = doneTickets.length > 0
+    ? Math.round(doneTickets.reduce((s, tk) => s + (new Date(tk.updated_at).getTime() - new Date(tk.created_at).getTime()) / 3600000, 0) / doneTickets.length)
+    : 0;
+
+  const propMap: Record<number, number> = {};
+  for (const tk of tickets) {
+    const unit = units.find(u => u.id === tk.unit_id);
+    if (unit) propMap[unit.property_id] = (propMap[unit.property_id] ?? 0) + 1;
+  }
+  const tickets_per_property = properties
+    .map(p => ({ property_name: p.name, ticket_count: propMap[p.id] ?? 0, total_cost: 0 }))
+    .filter(p => p.ticket_count > 0)
+    .sort((a, b) => b.ticket_count - a.ticket_count);
+
+  return { monthly_trend, tickets_per_property, avg_resolution_hours, sla_compliance_pct, total_cost: 0, avg_cost_per_ticket: 0, escalated_count: escalated, at_risk_count: atRisk };
+}
 
 /* ─── SVG Area/Line Trend Chart ─── */
-function TrendChart({ data }: { data: { label: string; value: number }[] }) {
+function TrendChart({ items }: { items: { label: string; value: number }[] }) {
   const [visible, setVisible] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setVisible(true), 100); return () => clearTimeout(t); }, []);
+  useEffect(() => { const id = setTimeout(() => setVisible(true), 100); return () => clearTimeout(id); }, []);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string; value: number } | null>(null);
 
-  if (data.length === 0) return <p className="analytics-no-data">Keine Daten</p>;
+  if (items.length === 0) return <p className="analytics-no-data">Keine Daten</p>;
 
   const W = 560; const H = 160; const PAD = { top: 16, right: 16, bottom: 32, left: 36 };
   const iW = W - PAD.left - PAD.right;
   const iH = H - PAD.top - PAD.bottom;
-  const maxV = Math.max(...data.map(d => d.value), 1);
-  const pts = data.map((d, i) => ({
-    x: PAD.left + (i / Math.max(data.length - 1, 1)) * iW,
+  const maxV = Math.max(...items.map(d => d.value), 1);
+  const pts = items.map((d, i) => ({
+    x: PAD.left + (i / Math.max(items.length - 1, 1)) * iW,
     y: PAD.top + (1 - d.value / maxV) * iH,
     ...d,
   }));
 
   const linePath = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const areaPath = `${linePath} L${pts[pts.length - 1].x.toFixed(1)},${(PAD.top + iH).toFixed(1)} L${pts[0].x.toFixed(1)},${(PAD.top + iH).toFixed(1)} Z`;
-
-  // y-axis ticks
-  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => ({
-    v: Math.round(maxV * f),
-    y: PAD.top + (1 - f) * iH,
-  }));
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => ({ v: Math.round(maxV * f), y: PAD.top + (1 - f) * iH }));
 
   return (
     <div style={{ position: "relative" }}>
@@ -42,27 +86,17 @@ function TrendChart({ data }: { data: { label: string; value: number }[] }) {
             <rect x={PAD.left} y={PAD.top} width={visible ? iW : 0} height={iH} style={{ transition: "width 0.8s ease" }} />
           </clipPath>
         </defs>
-
-        {/* Grid lines */}
         {yTicks.map(tick => (
           <g key={tick.v}>
             <line x1={PAD.left} x2={PAD.left + iW} y1={tick.y} y2={tick.y} stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
             <text x={PAD.left - 6} y={tick.y + 4} textAnchor="end" fontSize="10" fill="var(--text-muted)">{tick.v}</text>
           </g>
         ))}
-
-        {/* Area fill */}
         <path d={areaPath} fill="url(#areaGrad)" clipPath="url(#trendClip)" />
-
-        {/* Line */}
         <path d={linePath} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" clipPath="url(#trendClip)" />
-
-        {/* X labels */}
         {pts.map((p, i) => (
           <text key={i} x={p.x} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--text-muted)">{p.label}</text>
         ))}
-
-        {/* Dots + hover targets */}
         {pts.map((p, i) => (
           <g key={i}>
             <circle cx={p.x} cy={p.y} r="4" fill="var(--accent)" stroke="var(--bg-panel)" strokeWidth="2"
@@ -73,8 +107,6 @@ function TrendChart({ data }: { data: { label: string; value: number }[] }) {
               style={{ cursor: "default" }} />
           </g>
         ))}
-
-        {/* Tooltip */}
         {tooltip && (
           <g>
             <rect x={tooltip.x - 32} y={tooltip.y - 36} width={64} height={26} rx="5"
@@ -88,7 +120,7 @@ function TrendChart({ data }: { data: { label: string; value: number }[] }) {
   );
 }
 
-/* ─── Donut Chart with real ticket data ─── */
+/* ─── Donut Chart ─── */
 const STATUS_COLORS: Record<string, { label: string; color: string }> = {
   OPEN:        { label: "Offen",          color: "#638bff" },
   ASSIGNED:    { label: "Zugewiesen",     color: "#b57bee" },
@@ -99,11 +131,8 @@ const STATUS_COLORS: Record<string, { label: string; color: string }> = {
 
 function StatusDonut({ tickets }: { tickets: Ticket[] }) {
   const [hovered, setHovered] = useState<string | null>(null);
-  const counts = Object.fromEntries(
-    Object.keys(STATUS_COLORS).map(s => [s, tickets.filter(t => t.status === s).length])
-  );
+  const counts = Object.fromEntries(Object.keys(STATUS_COLORS).map(s => [s, tickets.filter(t => t.status === s).length]));
   const total = tickets.length;
-
   const R = 70; const STROKE = 20; const GAP = 2;
   const circ = 2 * Math.PI * R;
 
@@ -117,7 +146,6 @@ function StatusDonut({ tickets }: { tickets: Ticket[] }) {
     segs.push({ key, count, color: meta.color, label: meta.label, offset: off, dash });
     off += (count / total) * circ;
   }
-
   const hSeg = hovered ? segs.find(s => s.key === hovered) : null;
 
   if (total === 0) return <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>Keine Tickets.</p>;
@@ -133,42 +161,26 @@ function StatusDonut({ tickets }: { tickets: Ticket[] }) {
             const dashVal = (seg.count / total) * c2 - GAP;
             const offsetVal = (seg.offset / circ) * c2;
             return (
-              <circle key={seg.key}
-                cx={85} cy={85} r={r}
-                fill="none"
-                stroke={seg.color}
-                strokeWidth={isHov ? STROKE + 4 : STROKE}
-                strokeDasharray={`${dashVal} ${c2}`}
-                strokeDashoffset={-offsetVal}
+              <circle key={seg.key} cx={85} cy={85} r={r} fill="none"
+                stroke={seg.color} strokeWidth={isHov ? STROKE + 4 : STROKE}
+                strokeDasharray={`${dashVal} ${c2}`} strokeDashoffset={-offsetVal}
                 style={{ transition: "all 0.2s", opacity: hovered && !isHov ? 0.35 : 1, cursor: "pointer" }}
-                onMouseEnter={() => setHovered(seg.key)}
-                onMouseLeave={() => setHovered(null)}
-              />
+                onMouseEnter={() => setHovered(seg.key)} onMouseLeave={() => setHovered(null)} />
             );
           })}
         </g>
-        {/* Center label */}
-        <text x={85} y={80} textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--text-primary)">
-          {hSeg ? hSeg.count : total}
-        </text>
-        <text x={85} y={98} textAnchor="middle" fontSize="10" fill="var(--text-muted)">
-          {hSeg ? hSeg.label : "Tickets"}
-        </text>
+        <text x={85} y={80} textAnchor="middle" fontSize="22" fontWeight="700" fill={hSeg ? hSeg.color : "currentColor"}>{hSeg ? hSeg.count : total}</text>
+        <text x={85} y={98} textAnchor="middle" fontSize="10" fill="currentColor" opacity={0.55}>{hSeg ? hSeg.label : "Tickets"}</text>
       </svg>
-
-      {/* Legend */}
       <div className="status-donut-legend">
         {segs.map(seg => (
           <div key={seg.key} className="donut-legend-item"
             style={{ opacity: hovered && hovered !== seg.key ? 0.45 : 1, cursor: "default", transition: "opacity 0.2s" }}
-            onMouseEnter={() => setHovered(seg.key)}
-            onMouseLeave={() => setHovered(null)}>
+            onMouseEnter={() => setHovered(seg.key)} onMouseLeave={() => setHovered(null)}>
             <span className="donut-dot" style={{ background: seg.color }} />
             <span style={{ flex: 1, fontSize: "0.82rem" }}>{seg.label}</span>
             <span style={{ fontWeight: 700, fontSize: "0.82rem", color: seg.color }}>{seg.count}</span>
-            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: 4 }}>
-              ({Math.round((seg.count / total) * 100)}%)
-            </span>
+            <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginLeft: 4 }}>({Math.round((seg.count / total) * 100)}%)</span>
           </div>
         ))}
       </div>
@@ -177,12 +189,12 @@ function StatusDonut({ tickets }: { tickets: Ticket[] }) {
 }
 
 /* ─── Heatmap ─── */
-function Heatmap({ data }: { data: { name: string; count: number; cost: number }[] }) {
-  const max = Math.max(...data.map(d => d.count), 1);
+function Heatmap({ rows }: { rows: { name: string; count: number; cost: number }[] }) {
+  const max = Math.max(...rows.map(d => d.count), 1);
   const COLORS = ["#1e3a5f", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd"];
   return (
     <div className="heatmap-grid">
-      {data.map(d => {
+      {rows.map(d => {
         const level = Math.floor((d.count / max) * (COLORS.length - 1));
         return (
           <div key={d.name} className="heatmap-cell" style={{ background: COLORS[level] }}
@@ -211,29 +223,29 @@ function KPICard({ label, value, unit, sub, accent }: {
 }
 
 /* ─── Main ─── */
-interface Props { tickets: Ticket[] }
+interface Props { tickets: Ticket[]; units?: Unit[]; properties?: Property[] }
 
-export function AnalyticsPage({ tickets }: Props) {
+export function AnalyticsPage({ tickets, units = [], properties = [] }: Props) {
   const { t } = useLanguage();
-  const [data, setData] = useState<AnalyticsData | null>(null);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchAnalytics()
-      .then(setData)
-      .catch(() => setError(t("analyticsError")))
+      .then(setAnalyticsData)
+      .catch(() => setAnalyticsData(computeAnalytics(tickets, units, properties)))
       .finally(() => setLoading(false));
-  }, [t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) return (
     <div className="analytics-loading">
       <div className="spinner" />{t("analyticsLoading")}
     </div>
   );
-  if (error || !data) return <div className="analytics-error">{error || t("analyticsError")}</div>;
 
-  const trendData = data.monthly_trend.map(m => ({ label: m.month.slice(5), value: m.count }));
+  const ad = analyticsData ?? computeAnalytics(tickets, units, properties);
+  const trendItems = ad.monthly_trend.map(m => ({ label: m.month.slice(5), value: m.count }));
 
   return (
     <div className="analytics-page">
@@ -242,49 +254,41 @@ export function AnalyticsPage({ tickets }: Props) {
         <p className="analytics-subtitle">{t("analyticsSubtitle")}</p>
       </div>
 
-      {/* KPI Grid */}
       <div className="kpi-grid">
-        <KPICard label={t("kpiAvgResolution")} value={data.avg_resolution_hours} unit={` ${t("kpiHours")}`}
-          sub={data.sla_compliance_pct >= 80 ? "✅ On track" : "⚠️ Below target"} />
-        <KPICard label={t("kpiSLA")} value={`${data.sla_compliance_pct}%`}
-          sub={data.sla_compliance_pct >= 90 ? "Exzellent" : data.sla_compliance_pct >= 70 ? "Gut" : "Verbesserungsbedarf"}
-          accent={data.sla_compliance_pct < 70} />
-        <KPICard label={t("kpiTotalCost")} value={`CHF ${data.total_cost.toLocaleString("de-CH", { minimumFractionDigits: 2 })}`} />
-        <KPICard label={t("kpiAvgCost")} value={`CHF ${data.avg_cost_per_ticket.toLocaleString("de-CH", { minimumFractionDigits: 2 })}`} />
-        <KPICard label={t("kpiEscalated")} value={data.escalated_count} accent={data.escalated_count > 0}
-          sub={data.escalated_count === 0 ? "✅ Keine" : "🚨 Sofortmassnahmen nötig"} />
-        <KPICard label={t("kpiAtRisk")} value={data.at_risk_count} accent={data.at_risk_count > 0}
-          sub={data.at_risk_count === 0 ? "✅ Keine" : "⚠️ SLA > 80% verbraucht"} />
+        <KPICard label={t("kpiAvgResolution")} value={ad.avg_resolution_hours} unit={` ${t("kpiHours")}`}
+          sub={ad.sla_compliance_pct >= 80 ? "✅ On track" : "⚠️ Below target"} />
+        <KPICard label={t("kpiSLA")} value={`${ad.sla_compliance_pct}%`}
+          sub={ad.sla_compliance_pct >= 90 ? "Exzellent" : ad.sla_compliance_pct >= 70 ? "Gut" : "Verbesserungsbedarf"}
+          accent={ad.sla_compliance_pct < 70} />
+        <KPICard label={t("kpiTotalCost")} value={`CHF ${ad.total_cost.toLocaleString("de-CH", { minimumFractionDigits: 2 })}`} />
+        <KPICard label={t("kpiAvgCost")} value={`CHF ${ad.avg_cost_per_ticket.toLocaleString("de-CH", { minimumFractionDigits: 2 })}`} />
+        <KPICard label={t("kpiEscalated")} value={ad.escalated_count} accent={ad.escalated_count > 0}
+          sub={ad.escalated_count === 0 ? "✅ Keine" : "🚨 Sofortmassnahmen nötig"} />
+        <KPICard label={t("kpiAtRisk")} value={ad.at_risk_count} accent={ad.at_risk_count > 0}
+          sub={ad.at_risk_count === 0 ? "✅ Keine" : "⚠️ SLA > 80% verbraucht"} />
       </div>
 
       <div className="analytics-row">
-        {/* Monthly Trend — SVG line chart */}
         <div className="panel">
           <h3 className="panel-title">{t("chartTrend")}</h3>
-          <TrendChart data={trendData} />
+          <TrendChart items={trendItems} />
         </div>
-
-        {/* Status Donut — real ticket data */}
         <div className="panel" style={{ minWidth: 0 }}>
           <h3 className="panel-title">Status-Verteilung</h3>
           <StatusDonut tickets={tickets} />
         </div>
       </div>
 
-      {/* Heatmap */}
       <div className="panel">
         <h3 className="panel-title">{t("chartHeatmap")}</h3>
-        {data.tickets_per_property.length === 0
+        {ad.tickets_per_property.length === 0
           ? <p className="analytics-no-data">{t("analyticsNoData")}</p>
-          : <Heatmap data={data.tickets_per_property.map(p => ({
-              name: p.property_name, count: p.ticket_count, cost: p.total_cost,
-            }))} />}
+          : <Heatmap rows={ad.tickets_per_property.map(p => ({ name: p.property_name, count: p.ticket_count, cost: p.total_cost }))} />}
       </div>
 
-      {/* Cost Table */}
       <div className="panel">
         <h3 className="panel-title">{t("chartCostPerProp")}</h3>
-        {data.tickets_per_property.length === 0
+        {ad.tickets_per_property.length === 0
           ? <p className="analytics-no-data">{t("analyticsNoData")}</p>
           : (
           <div className="cost-table-wrap">
@@ -299,9 +303,9 @@ export function AnalyticsPage({ tickets }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {data.tickets_per_property.map(p => {
+                {ad.tickets_per_property.map(p => {
                   const avg = p.ticket_count > 0 ? p.total_cost / p.ticket_count : 0;
-                  const maxC = Math.max(...data.tickets_per_property.map(x => x.ticket_count), 1);
+                  const maxC = Math.max(...ad.tickets_per_property.map(x => x.ticket_count), 1);
                   const pct = (p.ticket_count / maxC) * 100;
                   return (
                     <tr key={p.property_name}>
@@ -321,9 +325,9 @@ export function AnalyticsPage({ tickets }: Props) {
               <tfoot>
                 <tr>
                   <td><strong>Total</strong></td>
-                  <td style={{ textAlign: "right" }}><strong>{data.tickets_per_property.reduce((s, p) => s + p.ticket_count, 0)}</strong></td>
-                  <td style={{ textAlign: "right" }}><strong>{data.total_cost.toFixed(2)}</strong></td>
-                  <td style={{ textAlign: "right" }}><strong>{data.avg_cost_per_ticket.toFixed(2)}</strong></td>
+                  <td style={{ textAlign: "right" }}><strong>{ad.tickets_per_property.reduce((s, p) => s + p.ticket_count, 0)}</strong></td>
+                  <td style={{ textAlign: "right" }}><strong>{ad.total_cost.toFixed(2)}</strong></td>
+                  <td style={{ textAlign: "right" }}><strong>{ad.avg_cost_per_ticket.toFixed(2)}</strong></td>
                   <td />
                 </tr>
               </tfoot>
