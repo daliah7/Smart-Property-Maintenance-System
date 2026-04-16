@@ -12,6 +12,7 @@ import { WartungsplanPage } from "./components/WartungsplanPage";
 import { DokumentePage } from "./components/DokumentePage";
 import { FinanzenPage } from "./components/FinanzenPage";
 import { BerichtePage } from "./components/BerichtePage";
+import { QuickTicketPage } from "./components/QuickTicketPage";
 import { useLanguage } from "./i18n/LanguageContext";
 import type { Invoice, Property, Ticket, Technician, TicketCreatePayload, Tenant, Unit } from "./types";
 import {
@@ -517,31 +518,12 @@ function App() {
         {activePage === "analytics" && <AnalyticsPage tickets={tickets} />}
 
         {activePage === "portal" && (
-          <div className="page-container">
-            <div className="page-header">
-              <div>
-                <h2 className="page-title">⌂ Mieter-Portal</h2>
-                <p className="page-subtitle">Das Portal ist für Mieter verfügbar. Mieter melden sich mit ihrer Mieter-ID an.</p>
-              </div>
-            </div>
-            <div className="panel" style={{ textAlign: "center", padding: "40px 24px" }}>
-              <div style={{ fontSize: "2.5rem", marginBottom: 16, opacity: 0.5 }}>⌂</div>
-              <p style={{ color: "var(--text-secondary)", fontSize: "0.95rem", marginBottom: 20 }}>
-                Mieter können sich über die Rollenauswahl als <strong>Mieter</strong> anmelden und mit ihrer Mieter-ID auf das Portal zugreifen.
-              </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-                {tenants.slice(0, 6).map(tn => {
-                  const u = units.find(u => u.id === tn.unit_id);
-                  return (
-                    <div key={tn.id} style={{ background: "var(--bg-input)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "12px 16px", fontSize: "0.82rem" }}>
-                      <div style={{ fontWeight: 600 }}>{tn.name}</div>
-                      <div style={{ color: "var(--text-muted)" }}>ID: {tn.id} · {u?.name ?? "—"}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <QuickTicketPage
+            tenants={tenants}
+            units={units}
+            tickets={tickets}
+            onTicketCreated={() => loadTickets(filter || undefined)}
+          />
         )}
 
         {activePage === "technicians" && (

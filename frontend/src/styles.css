@@ -1976,6 +1976,23 @@ select option { background: #1a2133; }
   flex-wrap: wrap;
 }
 
+/* ─── Quick Ticket Page (manager portal) ─── */
+.qt-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+.qt-form-col, .qt-info-col { display: flex; flex-direction: column; gap: 16px; }
+.qt-tenant-info { padding: 12px 14px; background: var(--accent-glow); border: 1px solid rgba(99,139,255,0.25); border-radius: var(--radius-md); }
+.qt-tenant-row { display: flex; align-items: center; gap: 12px; }
+.qt-tenant-icon { font-size: 1.4rem; color: var(--accent); }
+.qt-priority-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: -6px; }
+.qt-priority-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 10px 8px; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-input); cursor: pointer; font-size: 0.82rem;
+  transition: all var(--transition); color: var(--text-secondary);
+}
+.qt-priority-btn:hover { border-color: var(--border-focus); color: var(--text-primary); }
+.qt-priority-btn.active { font-weight: 600; }
+@media (max-width: 900px) { .qt-layout { grid-template-columns: 1fr; } }
+
 /* ─── Portal Menu ─── */
 .portal-back-row { display: flex; align-items: center; gap: 12px; }
 .portal-section-title { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
