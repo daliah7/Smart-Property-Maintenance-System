@@ -4,7 +4,16 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { AnalyticsData, Ticket, Unit, Property } from "../types";
 
 /* ─── Compute analytics client-side (fallback when backend is offline) ─── */
-const SLA_H: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
+const SLA_H:    Record<string, number> = { HIGH: 24,  MEDIUM: 168, LOW: 336 };
+const WORK_H:   Record<string, number> = { HIGH: 4,   MEDIUM: 2,   LOW: 1   };
+const MAT_PCT:  Record<string, number> = { HIGH: 0.5, MEDIUM: 0.25, LOW: 0  };
+const RATE = 80;
+
+function ticketCost(tk: Ticket): number {
+  const h = WORK_H[tk.priority] ?? 2;
+  const labor = h * RATE;
+  return labor + Math.round(labor * (MAT_PCT[tk.priority] ?? 0));
+}
 
 function computeAnalytics(tickets: Ticket[], units: Unit[], properties: Property[]): AnalyticsData {
   const now = Date.now();
@@ -39,17 +48,34 @@ function computeAnalytics(tickets: Ticket[], units: Unit[], properties: Property
     ? Math.round(doneTickets.reduce((s, tk) => s + (new Date(tk.updated_at).getTime() - new Date(tk.created_at).getTime()) / 3600000, 0) / doneTickets.length)
     : 0;
 
-  const propMap: Record<number, number> = {};
+  // Cost per property — use all billable tickets (resolved + closed)
+  const propTickets: Record<number, number[]> = {};
   for (const tk of tickets) {
     const unit = units.find(u => u.id === tk.unit_id);
-    if (unit) propMap[unit.property_id] = (propMap[unit.property_id] ?? 0) + 1;
+    if (!unit) continue;
+    if (!propTickets[unit.property_id]) propTickets[unit.property_id] = [];
+    propTickets[unit.property_id].push(tk.id);
   }
+  const propCost: Record<number, number> = {};
+  for (const tk of doneTickets) {
+    const unit = units.find(u => u.id === tk.unit_id);
+    if (!unit) continue;
+    propCost[unit.property_id] = (propCost[unit.property_id] ?? 0) + ticketCost(tk);
+  }
+
   const tickets_per_property = properties
-    .map(p => ({ property_name: p.name, ticket_count: propMap[p.id] ?? 0, total_cost: 0 }))
+    .map(p => ({
+      property_name: p.name,
+      ticket_count: (propTickets[p.id] ?? []).length,
+      total_cost: propCost[p.id] ?? 0,
+    }))
     .filter(p => p.ticket_count > 0)
     .sort((a, b) => b.ticket_count - a.ticket_count);
 
-  return { monthly_trend, tickets_per_property, avg_resolution_hours, sla_compliance_pct, total_cost: 0, avg_cost_per_ticket: 0, escalated_count: escalated, at_risk_count: atRisk };
+  const total_cost = doneTickets.reduce((s, tk) => s + ticketCost(tk), 0);
+  const avg_cost_per_ticket = doneTickets.length > 0 ? Math.round(total_cost / doneTickets.length) : 0;
+
+  return { monthly_trend, tickets_per_property, avg_resolution_hours, sla_compliance_pct, total_cost, avg_cost_per_ticket, escalated_count: escalated, at_risk_count: atRisk };
 }
 
 /* ─── SVG Area/Line Trend Chart ─── */
@@ -231,12 +257,12 @@ export function AnalyticsPage({ tickets, units = [], properties = [] }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     fetchAnalytics()
       .then(setAnalyticsData)
       .catch(() => setAnalyticsData(computeAnalytics(tickets, units, properties)))
       .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tickets, units, properties]);
 
   if (loading) return (
     <div className="analytics-loading">
