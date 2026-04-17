@@ -5,11 +5,22 @@ import type { TranslationKey } from "../i18n/translations";
 import type { Invoice, Technician, Ticket, TicketHistory, TicketPriority } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
-const SLA_HOURS: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
+const SLA_HOURS:    Record<string, number> = { HIGH: 24,  MEDIUM: 168, LOW: 336 };
+const WORK_HOURS:   Record<string, number> = { HIGH: 4,   MEDIUM: 2,   LOW: 1   };
+const MATERIAL_PCT: Record<string, number> = { HIGH: 0.5, MEDIUM: 0.25, LOW: 0  };
+const HOURLY_RATE = 80;
+
+function calcInvoice(ticket: Ticket) {
+  const h         = WORK_HOURS[ticket.priority]   ?? 2;
+  const labor     = h * HOURLY_RATE;
+  const materials = Math.round(labor * (MATERIAL_PCT[ticket.priority] ?? 0));
+  return { hours: h, labor, materials, total: labor + materials };
+}
 
 interface Props {
   ticket?: Ticket;
   technicians: Technician[];
+  allTickets?: Ticket[];
   onAssign: (ticketId: number, technicianId: number) => void;
   onAutoAssign: (ticketId: number) => void;
   onStart: (ticketId: number) => void;
@@ -151,14 +162,19 @@ function formatDate(iso: string, lang: string) {
 }
 
 /* ── Main Component ── */
-export function TicketDetail({ ticket, technicians, onAssign, onAutoAssign, onStart, onResolve, onClose, onCreateInvoice, onPayInvoice, invoice }: Props) {
+export function TicketDetail({ ticket, technicians, allTickets = [], onAssign, onAutoAssign, onStart, onResolve, onClose, onCreateInvoice, onPayInvoice, invoice }: Props) {
   const { t, lang } = useLanguage();
   const [technicianId, setTechnicianId] = useState<number>(technicians?.[0]?.id ?? 0);
   const [invoiceAmount, setInvoiceAmount] = useState(0);
   const [activeTab, setActiveTab] = useState<"detail" | "history">("detail");
 
-  // Reset tab when ticket changes
+  // Reset tab when ticket changes; pre-fill invoice when resolved
   useEffect(() => { setActiveTab("detail"); }, [ticket?.id]);
+  useEffect(() => {
+    if (ticket?.status === "RESOLVED" && !invoice) {
+      setInvoiceAmount(calcInvoice(ticket).total);
+    }
+  }, [ticket?.id, ticket?.status, invoice]);
 
   if (!ticket) {
     return (
@@ -257,9 +273,13 @@ export function TicketDetail({ ticket, technicians, onAssign, onAutoAssign, onSt
                   <label className="form-label">
                     {t("selectTechnician")}
                     <select value={technicianId} onChange={e => setTechnicianId(Number(e.target.value))}>
-                      {technicians.map(tech => (
-                        <option key={tech.id} value={tech.id}>{tech.name} · {tech.expertise}</option>
-                      ))}
+                      {technicians.map(tech => {
+                        const active = allTickets.filter(tk => tk.technician_id === tech.id && (tk.status === "OPEN" || tk.status === "ASSIGNED" || tk.status === "IN_PROGRESS")).length;
+                        const avail = active === 0 ? "✓ frei" : `${active} aktiv`;
+                        return (
+                          <option key={tech.id} value={tech.id}>{tech.name} [{avail}] · {tech.expertise.split(" ").slice(0,3).join(", ")}</option>
+                        );
+                      })}
                     </select>
                   </label>
                   <button className="btn btn-secondary btn-full" onClick={() => onAssign(ticket.id, technicianId)}
@@ -272,23 +292,43 @@ export function TicketDetail({ ticket, technicians, onAssign, onAutoAssign, onSt
               {ticket.status === "IN_PROGRESS" && (
                 <button className="btn btn-success btn-full" onClick={() => onResolve(ticket.id)}>{t("btnMarkResolved")}</button>
               )}
-              {ticket.status === "RESOLVED" && !invoice && (
-                <>
-                  <button className="btn btn-secondary btn-full" onClick={() => onClose(ticket.id)}>{t("btnCloseNoInvoice")}</button>
-                  <div className="invoice-create">
-                    <div className="invoice-create-label">{t("invoiceSection")}</div>
-                    <label className="form-label">
-                      {t("fieldAmount")}
-                      <input type="number" value={invoiceAmount || ""} min={0} step={10}
-                        placeholder={t("fieldAmountPlaceholder")}
-                        onChange={e => setInvoiceAmount(Number(e.target.value))} />
-                    </label>
-                    <button className="btn btn-primary btn-full"
-                      onClick={() => onCreateInvoice(ticket.id, invoiceAmount)}
-                      disabled={invoiceAmount <= 0}>{t("btnCreateInvoice")}</button>
-                  </div>
-                </>
-              )}
+              {ticket.status === "RESOLVED" && !invoice && (() => {
+                const calc = calcInvoice(ticket);
+                return (
+                  <>
+                    <button className="btn btn-secondary btn-full" onClick={() => onClose(ticket.id)}>{t("btnCloseNoInvoice")}</button>
+                    <div className="invoice-create">
+                      <div className="invoice-create-label">{t("invoiceSection")}</div>
+                      {/* Auto-calculated breakdown */}
+                      <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", marginBottom: 10, fontSize: "0.78rem", lineHeight: 1.7 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ color: "var(--text-muted)" }}>Arbeitszeit ({calc.hours}h × CHF {HOURLY_RATE}/h)</span>
+                          <span>CHF {calc.labor.toFixed(2)}</span>
+                        </div>
+                        {calc.materials > 0 && (
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ color: "var(--text-muted)" }}>Material ({ticket.priority === "HIGH" ? "50%" : "25%"} Zuschlag)</span>
+                            <span>CHF {calc.materials.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, borderTop: "1px solid var(--border)", paddingTop: 6, marginTop: 4 }}>
+                          <span>Total (berechenbar)</span>
+                          <span style={{ color: "var(--accent)" }}>CHF {calc.total.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <label className="form-label">
+                        {t("fieldAmount")} <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 400 }}>(automatisch berechnet, anpassbar)</span>
+                        <input type="number" value={invoiceAmount || ""} min={0} step={10}
+                          placeholder={t("fieldAmountPlaceholder")}
+                          onChange={e => setInvoiceAmount(Number(e.target.value))} />
+                      </label>
+                      <button className="btn btn-primary btn-full"
+                        onClick={() => onCreateInvoice(ticket.id, invoiceAmount)}
+                        disabled={invoiceAmount <= 0}>{t("btnCreateInvoice")}</button>
+                    </div>
+                  </>
+                );
+              })()}
               {ticket.status === "RESOLVED" && invoice && (
                 <button className="btn btn-secondary btn-full" onClick={() => onClose(ticket.id)}>{t("btnClose")}</button>
               )}

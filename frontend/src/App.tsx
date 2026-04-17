@@ -560,13 +560,21 @@ const DEMO_TECHNICIANS: Technician[] = [
   { id: 20, name: "Dino Ferrari",      expertise: "Reinigung Hausreinigung Treppenhausreinigung" },
 ];
 
-/* ─── Local auto-assign (demo mode) ─── */
-function localAutoAssign(ticket: Ticket, techs: Technician[]): number {
+/* ─── Local auto-assign: skill match + workload (demo mode) ─── */
+function localAutoAssign(ticket: Ticket, techs: Technician[], allTickets: Ticket[]): number {
   const haystack = (ticket.title + " " + ticket.description).toLowerCase();
+  const activeCount: Record<number, number> = {};
+  for (const tk of allTickets) {
+    if (tk.technician_id && (tk.status === "OPEN" || tk.status === "ASSIGNED" || tk.status === "IN_PROGRESS")) {
+      activeCount[tk.technician_id] = (activeCount[tk.technician_id] ?? 0) + 1;
+    }
+  }
   let bestId = techs[0]?.id ?? 1;
-  let bestScore = 0;
+  let bestScore = -Infinity;
   for (const tech of techs) {
-    const score = tech.expertise.toLowerCase().split(" ").filter(kw => haystack.includes(kw)).length;
+    const skillScore = tech.expertise.toLowerCase().split(" ").filter(kw => haystack.includes(kw)).length;
+    const load = activeCount[tech.id] ?? 0;
+    const score = skillScore * 3 - load; // skills dominate, load breaks ties
     if (score > bestScore) { bestScore = score; bestId = tech.id; }
   }
   return bestId;
@@ -667,7 +675,7 @@ function App() {
   const handleAutoAssign = (id: number) => {
     if (demoMode) {
       const tk = tickets.find(t => t.id === id);
-      if (tk) applyDemoTicketChange(id, { status: "ASSIGNED", technician_id: localAutoAssign(tk, technicians) }, t("toastAutoAssigned"));
+      if (tk) applyDemoTicketChange(id, { status: "ASSIGNED", technician_id: localAutoAssign(tk, technicians, tickets) }, t("toastAutoAssigned"));
       return;
     }
     performAction(() => autoAssignTicket(id), t("toastAutoAssigned"));
@@ -803,6 +811,7 @@ function App() {
               <TicketDetail
                 ticket={selectedTicket}
                 technicians={technicians}
+                allTickets={tickets}
                 onAutoAssign={handleAutoAssign}
                 onAssign={handleAssign}
                 onStart={handleStart}
