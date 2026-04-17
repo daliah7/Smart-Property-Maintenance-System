@@ -382,47 +382,159 @@ const DEMO_PROPERTIES: Property[] = [
 ];
 
 const DEMO_UNITS: Unit[] = [
-  { id: 1,  property_id: 1, name: "A1", floor: "EG",        sqm: 68,  rooms: 3 },
-  { id: 2,  property_id: 1, name: "A2", floor: "EG",        sqm: 72,  rooms: 3 },
-  { id: 3,  property_id: 1, name: "A3", floor: "1. OG",     sqm: 85,  rooms: 4 },
-  { id: 4,  property_id: 2, name: "B1", floor: "1. OG",     sqm: 55,  rooms: 2 },
-  { id: 5,  property_id: 2, name: "B2", floor: "2. OG",     sqm: 60,  rooms: 2 },
-  { id: 6,  property_id: 3, name: "C1", floor: "EG",        sqm: 90,  rooms: 4 },
-  { id: 7,  property_id: 3, name: "C2", floor: "1. OG",     sqm: 78,  rooms: 3 },
-  { id: 8,  property_id: 3, name: "C3", floor: "2. OG",     sqm: 78,  rooms: 3 },
-  { id: 9,  property_id: 4, name: "D1", floor: "1. OG",     sqm: 65,  rooms: 3 },
-  { id: 10, property_id: 4, name: "D2", floor: "2. OG",     sqm: 70,  rooms: 3 },
-  { id: 11, property_id: 4, name: "D3", floor: "Penthouse",  sqm: 130, rooms: 5 },
-  { id: 12, property_id: 5, name: "E1", floor: "EG",        sqm: 48,  rooms: 2 },
-  { id: 13, property_id: 5, name: "E2", floor: "1. OG",     sqm: 52,  rooms: 2 },
-  { id: 14, property_id: 6, name: "F1", floor: "EG",        sqm: 82,  rooms: 4 },
-  { id: 15, property_id: 6, name: "F2", floor: "1. OG",     sqm: 82,  rooms: 4 },
-  { id: 16, property_id: 6, name: "F3", floor: "2. OG",     sqm: 76,  rooms: 3 },
-  { id: 17, property_id: 7, name: "G1", floor: "EG",        sqm: 58,  rooms: 2 },
-  { id: 18, property_id: 7, name: "G2", floor: "1. OG",     sqm: 62,  rooms: 3 },
-  { id: 19, property_id: 7, name: "G3", floor: "2. OG",     sqm: 62,  rooms: 3 },
+  // ── Landmark Residences, Bern (prop 1) ─────────────────────────────────
+  { id: 1,  property_id: 1, name: "A1",  floor: "EG",       sqm: 68,  rooms: 3 },
+  { id: 2,  property_id: 1, name: "A2",  floor: "EG",       sqm: 72,  rooms: 3 },
+  { id: 3,  property_id: 1, name: "A3",  floor: "1. OG",    sqm: 85,  rooms: 4 },
+  { id: 20, property_id: 1, name: "A4",  floor: "1. OG",    sqm: 80,  rooms: 3 },
+  { id: 21, property_id: 1, name: "A5",  floor: "2. OG",    sqm: 78,  rooms: 3 },
+  { id: 22, property_id: 1, name: "A6",  floor: "2. OG",    sqm: 82,  rooms: 4 },
+  { id: 23, property_id: 1, name: "A7",  floor: "3. OG",    sqm: 88,  rooms: 4 },
+  { id: 24, property_id: 1, name: "A8",  floor: "3. OG",    sqm: 76,  rooms: 3 },
+  { id: 25, property_id: 1, name: "A9",  floor: "4. OG",    sqm: 92,  rooms: 4 },
+  { id: 26, property_id: 1, name: "A10", floor: "Penthouse", sqm: 148, rooms: 6 },
+  // ── Riverside Campus, Luzern (prop 2) ───────────────────────────────────
+  { id: 4,  property_id: 2, name: "B1",  floor: "EG",       sqm: 55,  rooms: 2 },
+  { id: 5,  property_id: 2, name: "B2",  floor: "1. OG",    sqm: 60,  rooms: 2 },
+  { id: 27, property_id: 2, name: "B3",  floor: "1. OG",    sqm: 62,  rooms: 3 },
+  { id: 28, property_id: 2, name: "B4",  floor: "2. OG",    sqm: 64,  rooms: 3 },
+  { id: 29, property_id: 2, name: "B5",  floor: "2. OG",    sqm: 58,  rooms: 2 },
+  { id: 30, property_id: 2, name: "B6",  floor: "3. OG",    sqm: 70,  rooms: 3 },
+  { id: 31, property_id: 2, name: "B7",  floor: "3. OG",    sqm: 55,  rooms: 2 },
+  { id: 32, property_id: 2, name: "B8",  floor: "4. OG",    sqm: 72,  rooms: 3 },
+  { id: 33, property_id: 2, name: "B9",  floor: "Penthouse", sqm: 120, rooms: 5 },
+  // ── Sunset Gardens, Lugano (prop 3) ─────────────────────────────────────
+  { id: 6,  property_id: 3, name: "C1",  floor: "EG",       sqm: 90,  rooms: 4 },
+  { id: 7,  property_id: 3, name: "C2",  floor: "1. OG",    sqm: 78,  rooms: 3 },
+  { id: 8,  property_id: 3, name: "C3",  floor: "2. OG",    sqm: 78,  rooms: 3 },
+  { id: 34, property_id: 3, name: "C4",  floor: "EG",       sqm: 88,  rooms: 4 },
+  { id: 35, property_id: 3, name: "C5",  floor: "1. OG",    sqm: 82,  rooms: 4 },
+  { id: 36, property_id: 3, name: "C6",  floor: "2. OG",    sqm: 85,  rooms: 4 },
+  { id: 37, property_id: 3, name: "C7",  floor: "3. OG",    sqm: 92,  rooms: 4 },
+  { id: 38, property_id: 3, name: "C8",  floor: "3. OG",    sqm: 88,  rooms: 4 },
+  { id: 39, property_id: 3, name: "C9",  floor: "4. OG",    sqm: 80,  rooms: 3 },
+  { id: 40, property_id: 3, name: "C10", floor: "Penthouse", sqm: 165, rooms: 7 },
+  // ── Zürichberg Residenz (prop 4) ─────────────────────────────────────────
+  { id: 9,  property_id: 4, name: "D1",  floor: "1. OG",    sqm: 65,  rooms: 3 },
+  { id: 10, property_id: 4, name: "D2",  floor: "2. OG",    sqm: 70,  rooms: 3 },
+  { id: 11, property_id: 4, name: "D3",  floor: "Penthouse", sqm: 130, rooms: 5 },
+  { id: 41, property_id: 4, name: "D4",  floor: "1. OG",    sqm: 68,  rooms: 3 },
+  { id: 42, property_id: 4, name: "D5",  floor: "2. OG",    sqm: 72,  rooms: 3 },
+  { id: 43, property_id: 4, name: "D6",  floor: "3. OG",    sqm: 78,  rooms: 3 },
+  { id: 44, property_id: 4, name: "D7",  floor: "3. OG",    sqm: 82,  rooms: 4 },
+  { id: 45, property_id: 4, name: "D8",  floor: "4. OG",    sqm: 86,  rooms: 4 },
+  { id: 46, property_id: 4, name: "D9",  floor: "4. OG",    sqm: 90,  rooms: 4 },
+  { id: 47, property_id: 4, name: "D10", floor: "Penthouse", sqm: 158, rooms: 6 },
+  // ── Seepark Nidwalden (prop 5) ───────────────────────────────────────────
+  { id: 12, property_id: 5, name: "E1",  floor: "EG",       sqm: 48,  rooms: 2 },
+  { id: 13, property_id: 5, name: "E2",  floor: "1. OG",    sqm: 52,  rooms: 2 },
+  { id: 48, property_id: 5, name: "E3",  floor: "EG",       sqm: 50,  rooms: 2 },
+  { id: 49, property_id: 5, name: "E4",  floor: "1. OG",    sqm: 54,  rooms: 2 },
+  { id: 50, property_id: 5, name: "E5",  floor: "1. OG",    sqm: 56,  rooms: 2 },
+  { id: 51, property_id: 5, name: "E6",  floor: "2. OG",    sqm: 54,  rooms: 2 },
+  { id: 52, property_id: 5, name: "E7",  floor: "2. OG",    sqm: 58,  rooms: 2 },
+  { id: 53, property_id: 5, name: "E8",  floor: "3. OG",    sqm: 62,  rooms: 3 },
+  { id: 54, property_id: 5, name: "E9",  floor: "Attika",   sqm: 96,  rooms: 4 },
+  // ── Rive du Lac, Genève (prop 6) ────────────────────────────────────────
+  { id: 14, property_id: 6, name: "F1",  floor: "EG",       sqm: 82,  rooms: 4 },
+  { id: 15, property_id: 6, name: "F2",  floor: "1. OG",    sqm: 82,  rooms: 4 },
+  { id: 16, property_id: 6, name: "F3",  floor: "2. OG",    sqm: 76,  rooms: 3 },
+  { id: 55, property_id: 6, name: "F4",  floor: "EG",       sqm: 84,  rooms: 4 },
+  { id: 56, property_id: 6, name: "F5",  floor: "1. OG",    sqm: 86,  rooms: 4 },
+  { id: 57, property_id: 6, name: "F6",  floor: "2. OG",    sqm: 88,  rooms: 4 },
+  { id: 58, property_id: 6, name: "F7",  floor: "3. OG",    sqm: 92,  rooms: 4 },
+  { id: 59, property_id: 6, name: "F8",  floor: "3. OG",    sqm: 86,  rooms: 4 },
+  { id: 60, property_id: 6, name: "F9",  floor: "4. OG",    sqm: 94,  rooms: 4 },
+  { id: 61, property_id: 6, name: "F10", floor: "Penthouse", sqm: 185, rooms: 7 },
+  // ── Les Terrasses de Lausanne (prop 7) ───────────────────────────────────
+  { id: 17, property_id: 7, name: "G1",  floor: "EG",       sqm: 58,  rooms: 2 },
+  { id: 18, property_id: 7, name: "G2",  floor: "1. OG",    sqm: 62,  rooms: 3 },
+  { id: 19, property_id: 7, name: "G3",  floor: "2. OG",    sqm: 62,  rooms: 3 },
+  { id: 62, property_id: 7, name: "G4",  floor: "EG",       sqm: 60,  rooms: 3 },
+  { id: 63, property_id: 7, name: "G5",  floor: "1. OG",    sqm: 64,  rooms: 3 },
+  { id: 64, property_id: 7, name: "G6",  floor: "2. OG",    sqm: 68,  rooms: 3 },
+  { id: 65, property_id: 7, name: "G7",  floor: "3. OG",    sqm: 70,  rooms: 3 },
+  { id: 66, property_id: 7, name: "G8",  floor: "3. OG",    sqm: 66,  rooms: 3 },
+  { id: 67, property_id: 7, name: "G9",  floor: "4. OG",    sqm: 72,  rooms: 3 },
+  { id: 68, property_id: 7, name: "G10", floor: "Attika",   sqm: 112, rooms: 5 },
 ];
 
 const DEMO_TENANTS: Tenant[] = [
-  { id: 1,  name: "Mia Grün",            email: "mia.gruen@example.com",          unit_id: 1  },
-  { id: 2,  name: "Jonas Weber",          email: "jonas.weber@example.com",         unit_id: 2  },
-  { id: 3,  name: "Lena Fischer",         email: "lena.fischer@example.com",        unit_id: 3  },
-  { id: 4,  name: "Sara Klein",           email: "sara.klein@example.com",          unit_id: 4  },
-  { id: 5,  name: "Felix Braun",          email: "felix.braun@example.com",         unit_id: 5  },
-  { id: 6,  name: "Sophie Müller",        email: "sophie.mueller@example.com",      unit_id: 6  },
-  { id: 7,  name: "David Schneider",      email: "david.schneider@example.com",     unit_id: 7  },
-  { id: 8,  name: "Anna Bauer",           email: "anna.bauer@example.com",          unit_id: 8  },
-  { id: 9,  name: "Lukas Meier",          email: "lukas.meier@example.com",         unit_id: 9  },
-  { id: 10, name: "Nina Keller",          email: "nina.keller@example.com",         unit_id: 10 },
-  { id: 11, name: "Pascal Zimmermann",    email: "pascal.zimmermann@example.com",   unit_id: 11 },
-  { id: 12, name: "Ursula Gamma",         email: "ursula.gamma@example.com",        unit_id: 12 },
-  { id: 13, name: "Bruno Kälin",          email: "bruno.kaelin@example.com",        unit_id: 13 },
-  { id: 14, name: "Céline Dupont",        email: "celine.dupont@example.com",       unit_id: 14 },
-  { id: 15, name: "Marc Fontaine",        email: "marc.fontaine@example.com",       unit_id: 15 },
-  { id: 16, name: "Isabelle Rochat",      email: "isabelle.rochat@example.com",     unit_id: 16 },
-  { id: 17, name: "Nathalie Vidal",       email: "nathalie.vidal@example.com",      unit_id: 17 },
-  { id: 18, name: "Olivier Chevalier",    email: "olivier.chevalier@example.com",   unit_id: 18 },
-  { id: 19, name: "Camille Morel",        email: "camille.morel@example.com",       unit_id: 19 },
+  // ── Bern (Swiss German, wealthy) ───────────────────────────────────────
+  { id: 1,  name: "Mia Grün",                   email: "mia.gruen@example.com",                unit_id: 1  },
+  { id: 2,  name: "Jonas Weber",                 email: "jonas.weber@example.com",               unit_id: 2  },
+  { id: 3,  name: "Lena Fischer",                email: "lena.fischer@example.com",              unit_id: 3  },
+  { id: 20, name: "Hans-Peter Ballmer",          email: "hp.ballmer@example.com",                unit_id: 20 },
+  { id: 21, name: "Elisabeth Renggli",           email: "e.renggli@example.com",                 unit_id: 21 },
+  { id: 22, name: "Rudolf Aeschbach",            email: "r.aeschbach@example.com",               unit_id: 22 },
+  { id: 23, name: "Maria-Theresia Stucki",       email: "mt.stucki@example.com",                 unit_id: 23 },
+  { id: 24, name: "Kaspar von Wattenwyl",        email: "k.vonwattenwyl@example.com",            unit_id: 24 },
+  { id: 25, name: "Béatrice Zumstein",           email: "b.zumstein@example.com",                unit_id: 25 },
+  { id: 26, name: "Dr. Christoph Brunner-Moser", email: "ch.brunner-moser@example.com",          unit_id: 26 },
+  // ── Luzern (Swiss German) ───────────────────────────────────────────────
+  { id: 4,  name: "Sara Klein",                  email: "sara.klein@example.com",                unit_id: 4  },
+  { id: 5,  name: "Felix Braun",                 email: "felix.braun@example.com",               unit_id: 5  },
+  { id: 27, name: "Ursula Bucher",               email: "u.bucher@example.com",                  unit_id: 27 },
+  { id: 28, name: "Peter Schürmann",             email: "p.schurmann@example.com",               unit_id: 28 },
+  { id: 29, name: "Monika Kaufmann",             email: "m.kaufmann@example.com",                unit_id: 29 },
+  { id: 30, name: "Josef Birrer",                email: "j.birrer@example.com",                  unit_id: 30 },
+  { id: 31, name: "Verena Troxler",              email: "v.troxler@example.com",                 unit_id: 31 },
+  { id: 32, name: "Martin Gassmann",             email: "m.gassmann@example.com",                unit_id: 32 },
+  { id: 33, name: "Dr. Regula Näpfer-Suter",     email: "r.naepfer-suter@example.com",           unit_id: 33 },
+  // ── Lugano (Italian / Ticinese) ─────────────────────────────────────────
+  { id: 6,  name: "Sophie Müller",               email: "sophie.mueller@example.com",            unit_id: 6  },
+  { id: 7,  name: "David Schneider",             email: "david.schneider@example.com",           unit_id: 7  },
+  { id: 8,  name: "Anna Bauer",                  email: "anna.bauer@example.com",                unit_id: 8  },
+  { id: 34, name: "Lorenzo Bernasconi",          email: "l.bernasconi@example.com",              unit_id: 34 },
+  { id: 35, name: "Giulia Fontana",              email: "g.fontana@example.com",                 unit_id: 35 },
+  { id: 36, name: "Ettore Cereghetti",           email: "e.cereghetti@example.com",              unit_id: 36 },
+  { id: 37, name: "Marta Lepori",                email: "m.lepori@example.com",                  unit_id: 37 },
+  { id: 38, name: "Alberto Rezzonico",           email: "a.rezzonico@example.com",               unit_id: 38 },
+  { id: 39, name: "Francesca Ponti",             email: "f.ponti@example.com",                   unit_id: 39 },
+  { id: 40, name: "Dott. Giorgio Clerici",       email: "g.clerici@example.com",                 unit_id: 40 },
+  // ── Zürich (wealthy) ────────────────────────────────────────────────────
+  { id: 9,  name: "Lukas Meier",                 email: "lukas.meier@example.com",               unit_id: 9  },
+  { id: 10, name: "Nina Keller",                 email: "nina.keller@example.com",               unit_id: 10 },
+  { id: 11, name: "Pascal Zimmermann",           email: "pascal.zimmermann@example.com",         unit_id: 11 },
+  { id: 41, name: "Katharina Schwarzenbach",     email: "k.schwarzenbach@example.com",           unit_id: 41 },
+  { id: 42, name: "Heinrich Honegger",           email: "h.honegger@example.com",                unit_id: 42 },
+  { id: 43, name: "Cornelia Escher-Bodmer",      email: "c.escher-bodmer@example.com",           unit_id: 43 },
+  { id: 44, name: "Tobias Nägeli",               email: "t.naegeli@example.com",                 unit_id: 44 },
+  { id: 45, name: "Franziska Ziegler-Wirth",     email: "f.ziegler-wirth@example.com",           unit_id: 45 },
+  { id: 46, name: "Dr. Albert Fonjallaz",        email: "a.fonjallaz@example.com",               unit_id: 46 },
+  { id: 47, name: "Prof. Dr. Stefan Bühler",     email: "s.buehler@example.com",                 unit_id: 47 },
+  // ── Buochs / Nidwalden ──────────────────────────────────────────────────
+  { id: 12, name: "Ursula Gamma",                email: "ursula.gamma@example.com",              unit_id: 12 },
+  { id: 13, name: "Bruno Kälin",                 email: "bruno.kaelin@example.com",              unit_id: 13 },
+  { id: 48, name: "Bernadette Odermatt",         email: "b.odermatt@example.com",                unit_id: 48 },
+  { id: 49, name: "Franz Niederberger",          email: "f.niederberger@example.com",            unit_id: 49 },
+  { id: 50, name: "Klara Käslin",                email: "k.kaeslin@example.com",                 unit_id: 50 },
+  { id: 51, name: "Alois Christen",              email: "a.christen@example.com",                unit_id: 51 },
+  { id: 52, name: "Maria Blättler",              email: "m.blaettler@example.com",               unit_id: 52 },
+  { id: 53, name: "Walter Wyrsch",               email: "w.wyrsch@example.com",                  unit_id: 53 },
+  { id: 54, name: "Beatrix Durrer-Gasser",       email: "b.durrer-gasser@example.com",           unit_id: 54 },
+  // ── Genève (French / wealthy) ───────────────────────────────────────────
+  { id: 14, name: "Céline Dupont",               email: "celine.dupont@example.com",             unit_id: 14 },
+  { id: 15, name: "Marc Fontaine",               email: "marc.fontaine@example.com",             unit_id: 15 },
+  { id: 16, name: "Isabelle Rochat",             email: "isabelle.rochat@example.com",           unit_id: 16 },
+  { id: 55, name: "Charles-Henri Pictet",        email: "ch.pictet@example.com",                 unit_id: 55 },
+  { id: 56, name: "Hélène de Saussure",          email: "h.desaussure@example.com",              unit_id: 56 },
+  { id: 57, name: "Frédéric Bordier",            email: "f.bordier@example.com",                 unit_id: 57 },
+  { id: 58, name: "Amélie Lombard",              email: "a.lombard@example.com",                 unit_id: 58 },
+  { id: 59, name: "Jean-Pierre Mallet",          email: "jp.mallet@example.com",                 unit_id: 59 },
+  { id: 60, name: "Dr. Christine Favre-Bonnet",  email: "c.favre-bonnet@example.com",            unit_id: 60 },
+  { id: 61, name: "Baron Philippe Necker",       email: "ph.necker@example.com",                 unit_id: 61 },
+  // ── Lausanne (French / Vaud) ────────────────────────────────────────────
+  { id: 17, name: "Nathalie Vidal",              email: "nathalie.vidal@example.com",            unit_id: 17 },
+  { id: 18, name: "Olivier Chevalier",           email: "olivier.chevalier@example.com",         unit_id: 18 },
+  { id: 19, name: "Camille Morel",               email: "camille.morel@example.com",             unit_id: 19 },
+  { id: 62, name: "Jean-François Dufour",        email: "jf.dufour@example.com",                 unit_id: 62 },
+  { id: 63, name: "Anne-Marie Recordon",         email: "am.recordon@example.com",               unit_id: 63 },
+  { id: 64, name: "François Junod",              email: "f.junod@example.com",                   unit_id: 64 },
+  { id: 65, name: "Sylvie Meylan",               email: "s.meylan@example.com",                  unit_id: 65 },
+  { id: 66, name: "Michel Dubuis",               email: "m.dubuis@example.com",                  unit_id: 66 },
+  { id: 67, name: "Marie-Claire Cavin",          email: "mc.cavin@example.com",                  unit_id: 67 },
+  { id: 68, name: "Prof. Henri Rosset-Pellet",   email: "h.rosset-pellet@example.com",           unit_id: 68 },
 ];
 
 const DEMO_TECHNICIANS: Technician[] = [
@@ -448,6 +560,18 @@ const DEMO_TECHNICIANS: Technician[] = [
   { id: 20, name: "Dino Ferrari",      expertise: "Reinigung Hausreinigung Treppenhausreinigung" },
 ];
 
+/* ─── Local auto-assign (demo mode) ─── */
+function localAutoAssign(ticket: Ticket, techs: Technician[]): number {
+  const haystack = (ticket.title + " " + ticket.description).toLowerCase();
+  let bestId = techs[0]?.id ?? 1;
+  let bestScore = 0;
+  for (const tech of techs) {
+    const score = tech.expertise.toLowerCase().split(" ").filter(kw => haystack.includes(kw)).length;
+    if (score > bestScore) { bestScore = score; bestId = tech.id; }
+  }
+  return bestId;
+}
+
 /* ─── Main App ─── */
 function App() {
   const { t, tf } = useLanguage();
@@ -463,7 +587,9 @@ function App() {
   const [selectedTicket, setSelectedTicket] = useState<Ticket | undefined>();
   const [filter, setFilter]                 = useState("");
   const [invoice, setInvoice]               = useState<Invoice | undefined>();
+  const [demoInvoices, setDemoInvoices]     = useState<Invoice[]>([]);
   const [loading, setLoading]               = useState(true);
+  const [demoMode, setDemoMode]             = useState(false);
 
   const { toasts, push, dismiss } = useToasts();
 
@@ -471,13 +597,16 @@ function App() {
     try {
       const items = await fetchTickets(status || undefined);
       setTickets(items);
+      setDemoMode(false);
       setSelectedTicket(prev => prev ? items.find(i => i.id === prev.id) : undefined);
     } catch {
-      setTickets(DEMO_TICKETS);
+      setTickets(prev => prev.length > 0 ? prev : DEMO_TICKETS);
+      setDemoMode(true);
     }
   }, []);
 
   const loadInvoiceForTicket = async (ticketId: number) => {
+    if (demoMode) { setInvoice(demoInvoices.find(i => i.ticket_id === ticketId)); return; }
     try { setInvoice(await fetchInvoiceByTicket(ticketId)); }
     catch { setInvoice(undefined); }
   };
@@ -494,6 +623,19 @@ function App() {
   }, [filter]);
 
   const handleCreateTicket = async (payload: TicketCreatePayload) => {
+    if (demoMode) {
+      const newId = Math.max(0, ...tickets.map(tk => tk.id)) + 1;
+      const newTk: Ticket = {
+        id: newId, title: payload.title, description: payload.description,
+        unit_id: payload.unit_id, tenant_id: payload.tenant_id,
+        technician_id: undefined, status: "OPEN",
+        priority: payload.priority ?? "MEDIUM",
+        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      };
+      setTickets(prev => [newTk, ...prev]);
+      push("success", t("toastTicketCreated"));
+      return;
+    }
     try {
       await createTicket(payload);
       await loadTickets(filter || undefined);
@@ -501,6 +643,14 @@ function App() {
     } catch (err) {
       push("error", `${t("toastTicketCreateError")}: ${err}`);
     }
+  };
+
+  const applyDemoTicketChange = (id: number, changes: Partial<Ticket>, successMsg: string) => {
+    const now = new Date().toISOString();
+    const apply = (tk: Ticket) => tk.id === id ? { ...tk, ...changes, updated_at: now } : tk;
+    setTickets(prev => prev.map(apply));
+    setSelectedTicket(prev => prev ? apply(prev) : prev);
+    push("success", successMsg);
   };
 
   const performAction = async (action: () => Promise<Ticket>, successMsg: string) => {
@@ -514,19 +664,51 @@ function App() {
     }
   };
 
-  const handleAutoAssign = (id: number) => performAction(() => autoAssignTicket(id), t("toastAutoAssigned"));
-  const handleAssign     = (id: number, techId: number) => performAction(() => assignTicket(id, techId), t("toastAssigned"));
-  const handleStart      = (id: number) => performAction(() => startTicket(id),   t("toastStarted"));
-  const handleResolve    = (id: number) => performAction(() => resolveTicket(id), t("toastResolved"));
-  const handleClose      = (id: number) => performAction(() => closeTicket(id),   t("toastClosed"));
+  const handleAutoAssign = (id: number) => {
+    if (demoMode) {
+      const tk = tickets.find(t => t.id === id);
+      if (tk) applyDemoTicketChange(id, { status: "ASSIGNED", technician_id: localAutoAssign(tk, technicians) }, t("toastAutoAssigned"));
+      return;
+    }
+    performAction(() => autoAssignTicket(id), t("toastAutoAssigned"));
+  };
+  const handleAssign = (id: number, techId: number) => {
+    if (demoMode) { applyDemoTicketChange(id, { status: "ASSIGNED", technician_id: techId }, t("toastAssigned")); return; }
+    performAction(() => assignTicket(id, techId), t("toastAssigned"));
+  };
+  const handleStart = (id: number) => {
+    if (demoMode) { applyDemoTicketChange(id, { status: "IN_PROGRESS" }, t("toastStarted")); return; }
+    performAction(() => startTicket(id), t("toastStarted"));
+  };
+  const handleResolve = (id: number) => {
+    if (demoMode) { applyDemoTicketChange(id, { status: "RESOLVED" }, t("toastResolved")); return; }
+    performAction(() => resolveTicket(id), t("toastResolved"));
+  };
+  const handleClose = (id: number) => {
+    if (demoMode) { applyDemoTicketChange(id, { status: "CLOSED" }, t("toastClosed")); return; }
+    performAction(() => closeTicket(id), t("toastClosed"));
+  };
 
   const handlePayInvoice = async (invoiceId: number) => {
+    if (demoMode) {
+      const paid = invoice ? { ...invoice, paid: true, paid_at: new Date().toISOString() } : undefined;
+      if (paid) { setInvoice(paid); setDemoInvoices(prev => prev.map(i => i.id === invoiceId ? paid : i)); }
+      push("success", t("toastInvoicePaid"));
+      return;
+    }
     try { setInvoice(await payInvoice(invoiceId)); push("success", t("toastInvoicePaid")); }
     catch (err) { push("error", `${t("toastActionError")}: ${err}`); }
   };
 
   const handleCreateInvoice = async (ticketId: number, amount: number) => {
     if (amount <= 0) { push("error", t("toastAmountError")); return; }
+    if (demoMode) {
+      const newInv: Invoice = { id: Date.now(), ticket_id: ticketId, amount, paid: false, created_at: new Date().toISOString() };
+      setDemoInvoices(prev => [...prev.filter(i => i.ticket_id !== ticketId), newInv]);
+      setInvoice(newInv);
+      push("success", tf("toastInvoiceCreated", { amount: amount.toFixed(2) }));
+      return;
+    }
     try {
       setInvoice(await createInvoice(ticketId, amount));
       await loadTickets(filter || undefined);
@@ -644,7 +826,7 @@ function App() {
           <PropertiesPage properties={properties} units={units} tenants={tenants} tickets={tickets} />
         )}
         {activePage === "wartungsplan" && (
-          <WartungsplanPage properties={properties} technicians={technicians} tickets={tickets} />
+          <WartungsplanPage properties={properties} technicians={technicians} />
         )}
         {activePage === "dokumente" && (
           <DokumentePage properties={properties} units={units} tenants={tenants} />
@@ -653,7 +835,7 @@ function App() {
           <FinanzenPage tickets={tickets} properties={properties} technicians={technicians} units={units} />
         )}
         {activePage === "berichte" && (
-          <BerichtePage tickets={tickets} technicians={technicians} properties={properties} />
+          <BerichtePage tickets={tickets} technicians={technicians} properties={properties} units={units} />
         )}
       </main>
 

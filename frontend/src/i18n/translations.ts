@@ -117,6 +117,7 @@ export const translations = {
     portalPrioHighSub: "sofort", portalPrioMediumSub: "bald", portalPrioLowSub: "normal",
     portalStatusOpen: "Offen", portalStatusAssigned: "Zugeteilt",
     portalStatusInProgress: "In Bearbeitung", portalStatusResolved: "Gelöst", portalStatusClosed: "Abgeschlossen",
+    statusDistributionTitle: "Status-Verteilung",
   },
 
   en: {
@@ -235,6 +236,7 @@ export const translations = {
     portalPrioHighSub: "urgent", portalPrioMediumSub: "soon", portalPrioLowSub: "normal",
     portalStatusOpen: "Open", portalStatusAssigned: "Assigned",
     portalStatusInProgress: "In Progress", portalStatusResolved: "Resolved", portalStatusClosed: "Closed",
+    statusDistributionTitle: "Status Distribution",
   },
 
   fr: {
@@ -353,6 +355,7 @@ export const translations = {
     portalPrioHighSub: "urgent", portalPrioMediumSub: "bientôt", portalPrioLowSub: "normal",
     portalStatusOpen: "Ouvert", portalStatusAssigned: "Assigné",
     portalStatusInProgress: "En cours", portalStatusResolved: "Résolu", portalStatusClosed: "Fermé",
+    statusDistributionTitle: "Répartition des statuts",
   },
 
   it: {
@@ -471,6 +474,7 @@ export const translations = {
     portalPrioHighSub: "urgente", portalPrioMediumSub: "presto", portalPrioLowSub: "normale",
     portalStatusOpen: "Aperto", portalStatusAssigned: "Assegnato",
     portalStatusInProgress: "In corso", portalStatusResolved: "Risolto", portalStatusClosed: "Chiuso",
+    statusDistributionTitle: "Distribuzione stati",
   },
 } as const;
 

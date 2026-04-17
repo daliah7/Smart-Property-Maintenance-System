@@ -3,7 +3,7 @@ import { useLanguage } from "../i18n/LanguageContext";
 import type { Ticket, Technician } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
-const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+const SLA_HOURS: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
 
 /* ─── Donut Chart ─── */
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -15,6 +15,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 };
 
 function DonutChart({ tickets, onNavigateTickets }: { tickets: Ticket[]; onNavigateTickets: (f: string) => void }) {
+  const { t } = useLanguage();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const counts = Object.fromEntries(
@@ -45,16 +46,16 @@ function DonutChart({ tickets, onNavigateTickets }: { tickets: Ticket[]; onNavig
 
   return (
     <div className="panel donut-panel">
-      <h3 className="panel-title" style={{ marginBottom: 18 }}>Status-Verteilung</h3>
+      <h3 className="panel-title" style={{ marginBottom: 18 }}>{t("statusDistributionTitle")}</h3>
       {total === 0 ? (
         <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", margin: 0 }}>Keine Tickets vorhanden.</p>
       ) : (
         <div className="donut-wrap">
           {/* SVG */}
           <div className="donut-svg-wrap">
-            <svg viewBox="0 0 200 200" width="200" height="200" aria-label="Ticket-Status Donut-Chart">
+            <svg viewBox="0 0 200 200" width="200" height="200" aria-label="Ticket-Status Donut-Chart" style={{ color: "var(--text-primary)" }}>
               {/* Track */}
-              <circle cx="100" cy="100" r={R} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={STROKE} />
+              <circle cx="100" cy="100" r={R} fill="none" stroke="var(--border)" strokeWidth={STROKE} />
               {/* Segments */}
               <g transform="rotate(-90 100 100)">
                 {segments.map(seg => (
@@ -78,12 +79,12 @@ function DonutChart({ tickets, onNavigateTickets }: { tickets: Ticket[]; onNavig
               {activeSegment ? (
                 <>
                   <text x="100" y="93" textAnchor="middle" fontSize="26" fontWeight="700" fill={activeSegment.color}>{activeSegment.count}</text>
-                  <text x="100" y="113" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.5)">{activeSegment.label}</text>
+                  <text x="100" y="113" textAnchor="middle" fontSize="11" fill="currentColor" opacity={0.5}>{activeSegment.label}</text>
                 </>
               ) : (
                 <>
-                  <text x="100" y="93" textAnchor="middle" fontSize="32" fontWeight="700" fill="rgba(255,255,255,0.9)">{total}</text>
-                  <text x="100" y="113" textAnchor="middle" fontSize="11" fill="rgba(255,255,255,0.4)">Total</text>
+                  <text x="100" y="93" textAnchor="middle" fontSize="32" fontWeight="700" fill="currentColor">{total}</text>
+                  <text x="100" y="113" textAnchor="middle" fontSize="11" fill="currentColor" opacity={0.45}>Total</text>
                 </>
               )}
             </svg>

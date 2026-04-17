@@ -17,18 +17,19 @@
 
 1. [Das Problem & die Lösung](#1-das-problem--die-lösung)
 2. [Projektübersicht & Features](#2-projektübersicht--features)
-3. [AI-assisted Development](#3-ai-assisted-development)
-4. [Systemarchitektur](#4-systemarchitektur)
-5. [Domänenmodell & Business-Logik](#5-domänenmodell--business-logik)
-6. [Tech Stack & Designentscheidungen](#6-tech-stack--designentscheidungen)
-7. [Schnellstart](#7-schnellstart)
-8. [Lokales Setup ohne Docker](#8-lokales-setup-ohne-docker)
-9. [API-Referenz](#9-api-referenz)
-10. [Testing & Qualitätssicherung](#10-testing--qualitätssicherung)
-11. [CI/CD Pipeline](#11-cicd-pipeline)
-12. [Cloud Deployment](#12-cloud-deployment)
-13. [Projektmanagement (Scrum)](#13-projektmanagement-scrum)
-14. [Bekannte Limitationen & Erweiterungen](#14-bekannte-limitationen--erweiterungen)
+3. [Benutzeroberfläche — Seitenübersicht](#3-benutzeroberfläche--seitenübersicht)
+4. [AI-assisted Development](#4-ai-assisted-development)
+5. [Systemarchitektur](#5-systemarchitektur)
+6. [Domänenmodell & Business-Logik](#6-domänenmodell--business-logik)
+7. [Tech Stack & Designentscheidungen](#7-tech-stack--designentscheidungen)
+8. [Schnellstart](#8-schnellstart)
+9. [Lokales Setup ohne Docker](#9-lokales-setup-ohne-docker)
+10. [API-Referenz](#10-api-referenz)
+11. [Testing & Qualitätssicherung](#11-testing--qualitätssicherung)
+12. [CI/CD Pipeline](#12-cicd-pipeline)
+13. [Cloud Deployment](#13-cloud-deployment)
+14. [Projektmanagement (Scrum)](#14-projektmanagement-scrum)
+15. [Bekannte Limitationen & Erweiterungen](#15-bekannte-limitationen--erweiterungen)
 
 ---
 
@@ -111,7 +112,138 @@ Vollständige Hierarchie aller Liegenschaften:
 
 ---
 
-## 3. AI-assisted Development
+## 3. Benutzeroberfläche — Seitenübersicht
+
+### Rollenauswahl
+
+Beim Start wählt der Nutzer zwischen zwei Rollen:
+
+| Rolle | PIN | Beschreibung |
+|---|---|---|
+| **Immobilienverwalter** | `777` | Vollzugriff auf alle Seiten, Ticket-Management, Finanzen, Berichte |
+| **Mieter** | keine | Eingeschränktes Portal mit Mieter-ID-Login (beliebige Zahl = Demo-Modus) |
+
+---
+
+### Mieter-Portal (`/mieter`)
+
+Das Mieter-Portal ist ein vereinfachtes Interface für Mieter, das nur die für sie relevanten Funktionen zeigt.
+
+**Funktionen:**
+- **Login mit Mieter-ID** — Mieter geben ihre ID ein; das System erkennt sie und zeigt ihre Einheit. Unbekannte IDs werden als Demo-Gast akzeptiert.
+- **Störungsmeldung einreichen** — Formular mit Titel, Beschreibung, Einheit und Priorität. Bei fehlender Backend-Verbindung (GitHub Pages) wird die Meldung lokal simuliert und eine Bestätigungsnummer angezeigt.
+- **Eigene Tickets ansehen** — Alle Tickets der eigenen Einheit mit Statusanzeige (Offen / In Bearbeitung / Gelöst).
+- **Bestätigungsansicht** — Nach dem Einreichen erscheint eine Bestätigung mit Ticket-Nummer.
+
+---
+
+### Immobilienverwalter-Ansicht
+
+#### Dashboard (`/dashboard`)
+
+Startseite mit vollständigem Überblick:
+- **4 Stat-Karten** (Total / Offen / Aktiv / Erledigt) — per Klick direkt zur gefilterten Ticket-Liste
+- **SLA-Warnsystem** — Eskalierte und gefährdete Tickets werden rot/gelb hervorgehoben mit genauen Überfälligkeitsstunden (SLA: HIGH = 24h, MEDIUM = 168h, LOW = 336h)
+- **Donut-Diagramm** — Interaktive Statusverteilung; Segmente anklickbar zum Filtern der Ticket-Liste; übersetzt in alle 4 Sprachen
+- **Prioritätsverteilung** — Balkendiagramm HIGH/MEDIUM/LOW
+- **Neueste Tickets** — Die 6 zuletzt erstellten Tickets mit Status-Badge
+- **Techniker-Auslastungstabelle** — Offen / Aktiv / Erledigt pro Techniker
+
+#### Tickets (`/tickets`)
+
+Vollständiges Ticket-Management in einer geteilten Ansicht (Links = Liste + Formular, Rechts = Detail):
+- **Ticket erstellen** — Titel, Beschreibung, Einheit, Mieter, Priorität (automatisch durch KI vorgeschlagen); im Demo-Modus lokal gespeichert
+- **Ticket-Liste** — Sortiert nach Priorität, filtierbar nach Status
+- **Ticket-Detail** — Lifecycle-Stepper zeigt aktuellen Status und erlaubte Aktionen:
+  - `OPEN` → **Auto-Zuweisung** (KI wählt Techniker via Keyword-Matching) oder **manuelle Zuweisung**
+  - `ASSIGNED` → **Arbeit starten**
+  - `IN_PROGRESS` → **Als erledigt markieren** + **Rechnung erstellen**
+  - `RESOLVED` → **Rechnung bezahlen** + **Schliessen**
+- Alle Aktionen funktionieren im **Demo-Modus offline** (keine Backend-Verbindung nötig)
+
+#### Analytics (`/analytics`)
+
+Auswertungsseite mit Charts:
+- Ticket-Trend über 6 Monate
+- SLA-Compliance-Rate
+- Tickets nach Objekt
+- Durchschnittliche Lösungszeit
+
+#### Techniker (`/technicians`)
+
+Karten-Übersicht aller 20 Techniker:
+- Avatar aus Initialen, Fachgebiet-Tags, Ticket-Statistiken, Auslastungsbalken
+- **Klick auf Karte** öffnet Modal mit:
+  - **KI-Kalender** — Auto-generierter Wochenplan: Tickets sortiert nach Priorität, mit Zeitslots (HIGH=4h, MEDIUM=2h, LOW=1h) und 30-min Puffer
+  - **Routen-Ansicht** — Optimierte Besuchsreihenfolge der Einheiten nach Priorität und Lage
+
+#### Objekte (`/properties`)
+
+7 Liegenschaften mit vollständiger Hierarchie:
+- **Landmark Residences** (Bern) — 10 Einheiten, Swiss-German Mieter
+- **Riverside Campus** (Luzern) — 9 Einheiten
+- **Sunset Gardens** (Lugano/Castagnola) — 10 Einheiten, Ticinese Mieter
+- **Zürichberg Residenz** (Zürich) — 10 Einheiten, Zürcher Mieter
+- **Seepark Nidwalden** (Buochs) — 9 Einheiten, Nidwaldner Mieter
+- **Rive du Lac** (Genève) — 10 Einheiten, Genfer Mieter (Pictet, de Saussure, Necker…)
+- **Les Terrasses de Lausanne** — 10 Einheiten, Waadtländer Mieter
+- Pro Objekt: alle Einheiten mit Mieter, E-Mail, Quadratmeter, Etage, offene Tickets
+
+#### Wartungsplan (`/wartungsplan`)
+
+Zwei-Tab-Ansicht für wiederkehrende Instandhaltung:
+
+**Tab: Wartungsaufgaben** — 12 Standardaufgaben mit Status (In Ordnung / Bald fällig / Überfällig):
+- Heizungsservice, Brandmeldeanlage, Aufzug-Hauptinspektion, Dachkontrolle, Legionellenprüfung usw.
+- Filterbar nach Kategorie (Heizung, Brandschutz, Lift, Elektro, Sanitär, Lüftung, Gebäudehülle, Aussenanlagen)
+- Neue Aufgaben hinzufügen, erledigte als "Erledigt" markieren
+
+**Tab: Störungsmeldungen** — Separate Liste von **technischen Anlagenstörungen** (unabhängig von Mieter-Tickets):
+- Aufzugausfall, Heizkessel-Fehler, CO-Alarm in Tiefgarage, Sprinklerdruckverlust, Fassadenriss usw.
+- Schweregrad: Kritisch / Schwerwiegend / Leicht
+- Status: Offen / In Bearbeitung / Behoben
+- "Als behoben markieren" Aktion
+- Bewusst **getrennt von regulären Mieter-Tickets** — betrifft technische Infrastruktur, nicht einzelne Wohneinheiten
+
+#### Dokumente (`/dokumente`)
+
+Dokumentenverwaltung mit 54 Dateien in 9 Kategorien:
+- Mietverträge, Protokolle, Wartungsnachweise, Versicherungen, Brandschutz, Pläne, Zertifikate, Verträge, Schadensdokumentation
+- Suche nach Name oder Objekt
+- Datei-Upload per Drag & Drop (lokal simuliert)
+- Löschen einzelner Dokumente
+
+#### Finanzen (`/finanzen`)
+
+Zwei-Tab-Ansicht für Finanzübersicht:
+
+**Tab: Rechnungen & Kosten**
+- KPI-Karten: Gesamtkosten / Bezahlt / Offen / Personalumsatz
+- Monatsbalkendiagramm (letzte 6 Monate)
+- Kosten nach Objekt (Balkendiagramm)
+- Rechnungsliste mit Filter (Alle / Bezahlt / Offen)
+- Im Demo-Modus: automatisch generierte Rechnungen aus abgeschlossenen Tickets (CHF/h × geschätzte Stunden + Materialzuschlag)
+
+**Tab: Personal & Technikerumsatz**
+- Umsatz pro Techniker: Tickets / Stunden / CHF (à 80 CHF/h interner Verrechnungssatz)
+- Personaleinsatz nach Objekt (Balkendiagramm)
+- Totalzeile mit Gesamtstunden und Gesamtumsatz
+
+#### Berichte (`/berichte`)
+
+Drei Berichtstypen mit Monats-/Jahresauswahl:
+
+**Monatsbericht** — KPI-Karten (Total / Gelöst / Offen / HIGH / Lösungsrate) + vollständige Ticket-Tabelle für den gewählten Monat
+
+**Objektbericht** — Tickets pro Liegenschaft im gewählten Monat (korrekte Zuordnung via Einheiten-Lookup)
+
+**Technikerbericht** — Performance aller Techniker: Zugewiesene Tickets / Erledigte / Rate + Fortschrittsbalken
+
+Drucken/Export via Browser-Print-Dialog.
+
+---
+
+## 4. AI-assisted Development
 
 Dieses Projekt wurde von Anfang bis Ende mit **Claude Code** (Anthropic) als AI-Coding-Agent entwickelt. Die vollständige Dokumentation des AI-Einsatzes ist in [`AGENTS.md`](AGENTS.md) festgehalten.
 

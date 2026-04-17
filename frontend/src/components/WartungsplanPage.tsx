@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Property, Technician, Ticket } from "../types";
+import type { Property, Technician } from "../types";
 
 interface MaintenanceTask {
   id: number;
@@ -31,42 +31,63 @@ const SEED_TASKS: MaintenanceTask[] = [
 
 const CATEGORIES = ["Alle", "Heizung", "Brandschutz", "Lift", "Elektro", "Sanitär", "Lüftung", "Gebäudehülle", "Aussenanlagen"];
 
+interface Stoerung {
+  id: number;
+  anlage: string;
+  category: string;
+  property: string;
+  description: string;
+  severity: "kritisch" | "schwerwiegend" | "leicht";
+  reportedAt: string;
+  status: "offen" | "in_bearbeitung" | "behoben";
+  resolvedAt?: string;
+  technician: string;
+}
+
+const SEV_META: Record<string, { label: string; color: string; icon: string }> = {
+  kritisch:      { label: "Kritisch",      color: "var(--danger)",  icon: "!" },
+  schwerwiegend: { label: "Schwerwiegend", color: "var(--warning)", icon: "▲" },
+  leicht:        { label: "Leicht",        color: "var(--success)", icon: "●" },
+};
+const STOR_STATUS_META: Record<string, { label: string; color: string }> = {
+  offen:          { label: "Offen",           color: "var(--accent)"  },
+  in_bearbeitung: { label: "In Bearbeitung",  color: "var(--warning)" },
+  behoben:        { label: "Behoben",         color: "var(--success)" },
+};
+
+const SEED_STORUNGEN: Stoerung[] = [
+  { id: 1,  anlage: "Personenaufzug A2",          category: "Lift",         property: "Landmark Residences",         description: "Kabine bleibt zwischen EG und 1. OG stecken. Notstop aktiv.",                severity: "kritisch",      reportedAt: "2026-04-16", status: "in_bearbeitung", technician: "Schindler AG"          },
+  { id: 2,  anlage: "Heizkessel HK-1",            category: "Heizung",      property: "Riverside Campus",            description: "Brenner startet nicht. Fehlercode E04 — Zündelektrode defekt.",             severity: "schwerwiegend", reportedAt: "2026-04-15", status: "in_bearbeitung", technician: "Ivan Horvat"           },
+  { id: 3,  anlage: "Tiefgarage Lüftungsanlage",  category: "Lüftung",      property: "Zürichberg Residenz",         description: "Ventilator läuft nicht an. CO-Werte erhöht — Betrieb gesperrt.",            severity: "kritisch",      reportedAt: "2026-04-14", status: "offen",          technician: "Tobias Keller"         },
+  { id: 4,  anlage: "Sprinkleranlage UG",          category: "Brandschutz",  property: "Rive du Lac",                 description: "Druckabfall im Sprinklernetz detektiert. Leck möglich.",                    severity: "schwerwiegend", reportedAt: "2026-04-13", status: "offen",          technician: "Brandschutz AG"        },
+  { id: 5,  anlage: "Fassade West — Riss EG",     category: "Gebäudehülle", property: "Sunset Gardens",              description: "Vertikaler Riss ca. 80 cm in Aussenwand. Feuchtigkeit eingetreten.",       severity: "schwerwiegend", reportedAt: "2026-04-10", status: "in_bearbeitung", technician: "Giorgio Ferretti"      },
+  { id: 6,  anlage: "Wasseraufbereitungsanlage",  category: "Sanitär",      property: "Alle Objekte",                description: "Legionellenprüfung — erhöhter Befund in Strang B3. Sofortmassnahme.",       severity: "kritisch",      reportedAt: "2026-04-09", status: "behoben",        resolvedAt: "2026-04-12", technician: "Sanitär GmbH"          },
+  { id: 7,  anlage: "Elektroverteiler EV-2",      category: "Elektro",      property: "Landmark Residences",         description: "Sicherung 32A fliegt täglich aus. Überlast Strang 2.",                       severity: "schwerwiegend", reportedAt: "2026-04-08", status: "behoben",        resolvedAt: "2026-04-10", technician: "Luka Novak"            },
+  { id: 8,  anlage: "Dachrinne Nord",             category: "Gebäudehülle", property: "Les Terrasses de Lausanne",   description: "Verstopfung durch Laub. Wasser läuft an Fassade ab — Frostschaden droht.", severity: "leicht",        reportedAt: "2026-04-07", status: "behoben",        resolvedAt: "2026-04-08", technician: "Marko Kovač"           },
+  { id: 9,  anlage: "Pumpengruppe HK Heizung",    category: "Heizung",      property: "Seepark Nidwalden",           description: "Pumpe läuft, fördert aber keine Wärme. Lager verschlissen.",               severity: "schwerwiegend", reportedAt: "2026-04-06", status: "behoben",        resolvedAt: "2026-04-09", technician: "Nicole Amstutz"        },
+  { id: 10, anlage: "Feuermeldeanlage FMA-3",     category: "Brandschutz",  property: "Zürichberg Residenz",         description: "Melder Raum 3.04 löst Fehlalarm aus. Sensor verschmutzt.",                   severity: "leicht",        reportedAt: "2026-04-05", status: "behoben",        resolvedAt: "2026-04-06", technician: "Dominik Frei"          },
+  { id: 11, anlage: "Aufzug Serviceaufzug UG",    category: "Lift",         property: "Riverside Campus",            description: "Türe schliesst nicht vollständig. Sicherheitsverriegelung aktiv.",          severity: "schwerwiegend", reportedAt: "2026-04-04", status: "offen",          technician: "Reto Amstutz"          },
+  { id: 12, anlage: "Photovoltaikanlage Dach",    category: "Elektro",      property: "Sunset Gardens",              description: "Wechselrichter zeigt Fehler F12. Einspeisung 40 % reduziert.",              severity: "leicht",        reportedAt: "2026-04-03", status: "in_bearbeitung", technician: "Lorenzo Russo"         },
+  { id: 13, anlage: "Gartentor Tiefgarage",       category: "Aussenanlagen",property: "Rive du Lac",                 description: "Schranke öffnet nicht auf Funk. Antriebsmotor defekt.",                      severity: "leicht",        reportedAt: "2026-04-02", status: "behoben",        resolvedAt: "2026-04-04", technician: "Alexei Volkov"         },
+  { id: 14, anlage: "Abwasserhebeanlage",         category: "Sanitär",      property: "Landmark Residences",         description: "Niveau-Alarm ausgelöst. Schwimmer klemmt — UG kann nicht entwässern.",     severity: "kritisch",      reportedAt: "2026-03-28", status: "behoben",        resolvedAt: "2026-03-29", technician: "Pierre Maillard"       },
+  { id: 15, anlage: "Lüftungsanlage Wohnungen",   category: "Lüftung",      property: "Les Terrasses de Lausanne",   description: "Filter überfällig — Luftmenge 30 % unter Soll. Filterersatz nötig.",         severity: "leicht",        reportedAt: "2026-03-25", status: "behoben",        resolvedAt: "2026-03-27", technician: "Tobias Keller"         },
+];
+
 const STATUS_META = {
   ok:        { label: "In Ordnung",  color: "var(--success)", icon: "✓" },
   due_soon:  { label: "Bald fällig", color: "var(--warning)", icon: "▲" },
   overdue:   { label: "Überfällig",  color: "var(--danger)",  icon: "!" },
 };
 
-const PRIO_META: Record<string, { label: string; color: string }> = {
-  HIGH:   { label: "Hoch",   color: "var(--danger)"  },
-  MEDIUM: { label: "Mittel", color: "var(--warning)" },
-  LOW:    { label: "Tief",   color: "var(--success)" },
-};
+interface Props { properties: Property[]; technicians: Technician[]; tickets?: never; }
 
-const STATUS_LABEL: Record<string, string> = {
-  OPEN:        "Offen",
-  ASSIGNED:    "Zugeteilt",
-  IN_PROGRESS: "In Bearbeitung",
-  RESOLVED:    "Gelöst",
-  CLOSED:      "Abgeschlossen",
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  OPEN:        "var(--accent)",
-  ASSIGNED:    "var(--warning)",
-  IN_PROGRESS: "var(--warning)",
-  RESOLVED:    "var(--success)",
-  CLOSED:      "var(--text-muted)",
-};
-
-interface Props { properties: Property[]; technicians: Technician[]; tickets: Ticket[]; }
-
-export function WartungsplanPage({ properties, technicians, tickets }: Props) {
+export function WartungsplanPage({ properties, technicians }: Props) {
   const [tab, setTab]         = useState<"tasks" | "stoerungen">("tasks");
   const [filter, setFilter]   = useState("Alle");
   const [tasks, setTasks]     = useState<MaintenanceTask[]>(SEED_TASKS);
   const [showAdd, setShowAdd] = useState(false);
-  const [storFilter, setStorFilter] = useState<"all" | "open" | "done">("all");
+  const [storFilter, setStorFilter] = useState<"all" | "offen" | "behoben">("all");
+  const [storungen, setStorungen]   = useState<Stoerung[]>(SEED_STORUNGEN);
   const [newTask, setNewTask] = useState({
     title: "", category: "Heizung", property: "", interval: "Jährlich",
     nextDue: "", technician: "", notes: "",
@@ -79,16 +100,18 @@ export function WartungsplanPage({ properties, technicians, tickets }: Props) {
     overdue:  tasks.filter(t => t.status === "overdue").length,
   };
 
-  /* Störungsmeldungen — open/active tickets */
-  const stoerungenAll = [...tickets].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const stoerungen = stoerungenAll.filter(tk => {
-    if (storFilter === "open") return tk.status === "OPEN" || tk.status === "ASSIGNED" || tk.status === "IN_PROGRESS";
-    if (storFilter === "done") return tk.status === "RESOLVED" || tk.status === "CLOSED";
+  const visibleStorungen = storungen.filter(s => {
+    if (storFilter === "offen")   return s.status === "offen" || s.status === "in_bearbeitung";
+    if (storFilter === "behoben") return s.status === "behoben";
     return true;
   });
   const storCounts = {
-    open: stoerungenAll.filter(tk => tk.status === "OPEN" || tk.status === "ASSIGNED" || tk.status === "IN_PROGRESS").length,
-    done: stoerungenAll.filter(tk => tk.status === "RESOLVED" || tk.status === "CLOSED").length,
+    open:   storungen.filter(s => s.status === "offen" || s.status === "in_bearbeitung").length,
+    behoben: storungen.filter(s => s.status === "behoben").length,
+  };
+
+  const markStorungBehoben = (id: number) => {
+    setStorungen(prev => prev.map(s => s.id === id ? { ...s, status: "behoben" as const, resolvedAt: new Date().toISOString().slice(0, 10) } : s));
   };
 
   const markDone = (id: number) => {
@@ -261,7 +284,7 @@ export function WartungsplanPage({ properties, technicians, tickets }: Props) {
         </>
       )}
 
-      {/* ── STÖRUNGSMELDUNGEN ── */}
+      {/* ── STÖRUNGSMELDUNGEN (technische Anlagen) ── */}
       {tab === "stoerungen" && (
         <>
           <div className="wp-kpi-row">
@@ -270,56 +293,56 @@ export function WartungsplanPage({ properties, technicians, tickets }: Props) {
               <span className="wp-kpi-label">Aktive Störungen</span>
             </div>
             <div className="wp-kpi wp-kpi-ok">
-              <span className="wp-kpi-val">{storCounts.done}</span>
+              <span className="wp-kpi-val">{storCounts.behoben}</span>
               <span className="wp-kpi-label">Behobene Störungen</span>
             </div>
             <div className="wp-kpi">
-              <span className="wp-kpi-val">{stoerungenAll.length}</span>
+              <span className="wp-kpi-val">{storungen.length}</span>
               <span className="wp-kpi-label">Total Meldungen</span>
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-            {(["all","open","done"] as const).map(f => (
+            {([["all","Alle"],["offen","Aktiv"],["behoben","Behoben"]] as const).map(([f, label]) => (
               <button key={f} className={`wp-filter-btn ${storFilter === f ? "active" : ""}`} onClick={() => setStorFilter(f)}>
-                {f === "all" ? "Alle" : f === "open" ? "Aktiv" : "Behoben"}
+                {label}
               </button>
             ))}
           </div>
 
           <div className="panel" style={{ padding: 0, overflow: "hidden" }}>
             <div className="wp-task-list">
-              {stoerungen.length === 0 && (
+              {visibleStorungen.length === 0 && (
                 <div style={{ padding: "32px 20px", color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center" }}>
-                  Keine Störungsmeldungen vorhanden.
+                  Keine Störungsmeldungen in dieser Kategorie.
                 </div>
               )}
-              {stoerungen.map(tk => {
-                const prio = PRIO_META[tk.priority] ?? PRIO_META.MEDIUM;
-                const statusColor = STATUS_COLOR[tk.status] ?? "var(--text-muted)";
-                const statusLabel = STATUS_LABEL[tk.status] ?? tk.status;
-                const created = new Intl.DateTimeFormat("de-CH", { day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(tk.created_at));
+              {visibleStorungen.map(s => {
+                const sev = SEV_META[s.severity];
+                const st  = STOR_STATUS_META[s.status];
                 return (
-                  <div key={tk.id} className="wp-table-row" style={{ padding: "14px 20px" }}>
+                  <div key={s.id} className="wp-table-row" style={{ padding: "14px 20px" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{
-                          fontSize: "0.7rem", fontWeight: 700, padding: "2px 8px", borderRadius: 10,
-                          background: prio.color + "1a", color: prio.color, border: `1px solid ${prio.color}44`,
-                        }}>{prio.label}</span>
-                        <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>{tk.title}</span>
-                        <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "var(--text-muted)" }}>#{tk.id}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "0.72rem", fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: sev.color + "1a", color: sev.color, border: `1px solid ${sev.color}44` }}>
+                          {sev.icon} {sev.label}
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: "0.92rem" }}>{s.anlage}</span>
+                        <span className="wp-tag">{s.category}</span>
+                        <span style={{ marginLeft: "auto", fontSize: "0.72rem", color: "var(--text-muted)" }}>{s.property}</span>
                       </div>
+                      <div style={{ fontSize: "0.82rem", color: "var(--text-secondary)", marginBottom: 6 }}>{s.description}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                        <span style={{
-                          fontSize: "0.72rem", fontWeight: 600, padding: "2px 8px", borderRadius: 10,
-                          background: statusColor + "1a", color: statusColor, border: `1px solid ${statusColor}44`,
-                        }}>{statusLabel}</span>
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{created}</span>
-                        {tk.description && (
-                          <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>
-                            {tk.description.slice(0, 80)}{tk.description.length > 80 ? "…" : ""}
-                          </span>
+                        <span style={{ fontSize: "0.72rem", fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: st.color + "1a", color: st.color, border: `1px solid ${st.color}44` }}>
+                          {st.label}
+                        </span>
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Gemeldet: {s.reportedAt}</span>
+                        {s.resolvedAt && <span style={{ fontSize: "0.72rem", color: "var(--success)" }}>Behoben: {s.resolvedAt}</span>}
+                        <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>Zuständig: {s.technician}</span>
+                        {s.status !== "behoben" && (
+                          <button className="btn btn-ghost" style={{ fontSize: "0.72rem", padding: "3px 10px", marginLeft: "auto" }} onClick={() => markStorungBehoben(s.id)}>
+                            ✓ Als behoben markieren
+                          </button>
                         )}
                       </div>
                     </div>
@@ -331,8 +354,8 @@ export function WartungsplanPage({ properties, technicians, tickets }: Props) {
         </>
       )}
 
-      {/* suppress unused warnings */}
-      {properties.length === 0 && technicians.length === 0 && null}
+      {/* suppress unused prop warnings */}
+      {(properties.length === 0 || technicians.length === 0) && null}
     </div>
   );
 }

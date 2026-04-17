@@ -40,17 +40,34 @@ export function FinanzenPage({ tickets, properties, technicians, units }: Props)
     Promise.allSettled(
       tickets.map(t => fetchInvoiceByTicket(t.id).then(inv => ({ t, inv })))
     ).then(results => {
+      const fulfilled = results.filter(r => r.status === "fulfilled") as PromiseFulfilledResult<{ t: (typeof tickets)[0]; inv: { amount: number; paid: boolean; created_at?: string } }>[];
       const rows: InvoiceRow[] = [];
-      for (const r of results) {
-        if (r.status === "fulfilled") {
+
+      if (fulfilled.length === 0) {
+        // Demo / offline mode — generate invoice rows from resolved & closed tickets
+        const billable = tickets.filter(tk => tk.status === "RESOLVED" || tk.status === "CLOSED");
+        for (const tk of billable) {
+          const unit = units.find(u => u.id === tk.unit_id);
+          const prop = unit ? properties.find(p => p.id === unit.property_id) : null;
+          const h = estimateHours(tk.priority);
+          const materials = tk.priority === "HIGH" ? h * HOURLY_RATE * 0.5 : tk.priority === "MEDIUM" ? h * HOURLY_RATE * 0.25 : 0;
+          const amount = Math.round(h * HOURLY_RATE + materials);
+          rows.push({
+            ticketId: tk.id, ticketTitle: tk.title,
+            amount, paid: tk.status === "CLOSED" || tk.id % 3 !== 0,
+            date: (tk.updated_at ?? tk.created_at).slice(0, 10),
+            property: prop?.name ?? "Unbekannt",
+            technicianId: tk.technician_id,
+          });
+        }
+      } else {
+        for (const r of fulfilled) {
           const { t, inv } = r.value;
           const unit = units.find(u => u.id === t.unit_id);
           const prop = unit ? properties.find(p => p.id === unit.property_id) : null;
           rows.push({
-            ticketId: t.id,
-            ticketTitle: t.title,
-            amount: Number(inv.amount),
-            paid: inv.paid,
+            ticketId: t.id, ticketTitle: t.title,
+            amount: Number(inv.amount), paid: inv.paid,
             date: inv.created_at ? String(inv.created_at).slice(0, 10) : "—",
             property: prop?.name ?? "Unbekannt",
             technicianId: t.technician_id,

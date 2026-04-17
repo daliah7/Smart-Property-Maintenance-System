@@ -87,7 +87,7 @@ function TechModal({ tech, tickets, onClose }: { tech: Technician; tickets: Tick
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div style={{ background: "var(--surface)", borderRadius: 16, width: "100%", maxWidth: 560, maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.35)" }}>
+      <div className="panel" style={{ borderRadius: 16, width: "100%", maxWidth: 560, maxHeight: "85vh", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 24px 64px rgba(0,0,0,0.5)", margin: 0 }}>
         {/* Header */}
         <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--accent)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "1.1rem", flexShrink: 0 }}>
@@ -113,7 +113,7 @@ function TechModal({ tech, tickets, onClose }: { tech: Technician; tickets: Tick
         </div>
 
         {/* Body */}
-        <div style={{ flex: 1, overflowY: "auto", padding: 24 }}>
+        <div style={{ flex: 1, overflowY: "auto", padding: 24, background: "var(--bg)" }}>
           {view === "calendar" && (
             <>
               <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: 14 }}>

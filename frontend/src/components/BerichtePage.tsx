@@ -1,11 +1,11 @@
 import { useState } from "react";
-import type { Ticket, Technician, Property } from "../types";
+import type { Ticket, Technician, Property, Unit } from "../types";
 
 const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
-interface Props { tickets: Ticket[]; technicians: Technician[]; properties: Property[]; }
+interface Props { tickets: Ticket[]; technicians: Technician[]; properties: Property[]; units: Unit[]; }
 
-export function BerichtePage({ tickets, technicians, properties }: Props) {
+export function BerichtePage({ tickets, technicians, properties, units }: Props) {
   const now        = new Date();
   const [selMonth, setSelMonth] = useState(now.getMonth());
   const [selYear,  setSelYear]  = useState(now.getFullYear());
@@ -24,9 +24,9 @@ export function BerichtePage({ tickets, technicians, properties }: Props) {
     return { tech, assigned: assigned.length, done: done.length, rate: assigned.length > 0 ? Math.round((done.length / assigned.length) * 100) : 0 };
   }).filter(s => s.assigned > 0).sort((a, b) => b.assigned - a.assigned);
 
-  // Property stats
+  // Property stats (via units lookup)
   const propStats = properties.map(prop => {
-    const pts = monthTickets.filter(t => String(t.unit_id).startsWith(String(prop.id)));
+    const pts = monthTickets.filter(t => units.find(u => u.id === t.unit_id)?.property_id === prop.id);
     return { prop, count: pts.length, open: pts.filter(t => t.status === "OPEN").length };
   }).filter(s => s.count > 0).sort((a, b) => b.count - a.count);
 

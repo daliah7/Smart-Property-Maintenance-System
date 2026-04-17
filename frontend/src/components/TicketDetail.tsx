@@ -5,7 +5,7 @@ import type { TranslationKey } from "../i18n/translations";
 import type { Invoice, Technician, Ticket, TicketHistory, TicketPriority } from "../types";
 import { StatusBadge } from "./StatusBadge";
 
-const SLA_HOURS: Record<string, number> = { HIGH: 4, MEDIUM: 24, LOW: 72 };
+const SLA_HOURS: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
 
 interface Props {
   ticket?: Ticket;
