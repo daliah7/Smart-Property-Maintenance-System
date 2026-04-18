@@ -224,10 +224,9 @@ function Heatmap({ rows }: { rows: { name: string; count: number; cost: number }
         const level = Math.floor((d.count / max) * (COLORS.length - 1));
         return (
           <div key={d.name} className="heatmap-cell" style={{ background: COLORS[level] }}
-            title={`${d.name}: ${d.count} Tickets · CHF ${d.cost.toFixed(0)}`}>
+            title={`${d.name}: ${d.count} Tickets`}>
             <span className="heatmap-name">{d.name}</span>
             <span className="heatmap-count">{d.count}</span>
-            {d.cost > 0 && <span className="heatmap-cost">CHF {d.cost.toFixed(0)}</span>}
           </div>
         );
       })}

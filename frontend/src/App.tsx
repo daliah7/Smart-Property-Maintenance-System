@@ -139,10 +139,10 @@ function NavBar({ active, onNavigate }: { active: Page; onNavigate: (p: Page) =>
     { key: "analytics",   label: t("navAnalytics"),   icon: "◆" },
     { key: "technicians",  label: t("navTechnicians"),  icon: "◉" },
     { key: "properties",   label: t("navProperties"),   icon: "⊞" },
-    { key: "wartungsplan", label: "Wartungsplan",        icon: "◷" },
-    { key: "dokumente",    label: "Dokumente",           icon: "▤" },
-    { key: "finanzen",     label: "Finanzen",            icon: "⊠" },
-    { key: "berichte",     label: "Berichte",            icon: "▦" },
+    { key: "wartungsplan", label: t("navWartungsplan"),  icon: "◷" },
+    { key: "dokumente",    label: t("navDokumente"),     icon: "▤" },
+    { key: "finanzen",     label: t("navFinanzen"),      icon: "⊠" },
+    { key: "berichte",     label: t("navBerichte"),      icon: "▦" },
   ];
   return (
     <nav className="nav-bar" aria-label="Main navigation">
