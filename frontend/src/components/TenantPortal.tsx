@@ -128,7 +128,7 @@ interface Props {
   units: Unit[];
   tickets: Ticket[];
   tenant: Tenant;
-  onTicketCreated: () => void;
+  onTicketCreated: (ticket: Ticket) => string | undefined;
   onShowTicket: (ticket: Ticket) => void;
 }
 
@@ -149,7 +149,7 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
   type View = "menu" | "create" | "list" | "detail" | "confirm" | "reschedule";
   const [view, setView]                     = useState<View>("menu");
   const [detailTicket, setDetailTicket]     = useState<Ticket | null>(null);
-  const [confirmedTicket, setConfirmedTicket] = useState<{ id: number; title: string } | null>(null);
+  const [confirmedTicket, setConfirmedTicket] = useState<{ id: number; title: string; technicianName?: string } | null>(null);
 
   const [title, setTitle]           = useState("");
   const [desc, setDesc]             = useState("");
@@ -190,28 +190,41 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
     if (!title.trim() || !desc.trim()) return;
     setSubmitting(true);
     setSubmitError("");
+    const filledSlots = slots.filter(s => s.date && s.time);
+    const availBlock = filledSlots.length > 0
+      ? `\n\n${t("portalAvailability")}:\n${filledSlots.map((s, i) => `  ${i + 1}. ${s.date} ${s.time}${s.note ? ` (${s.note})` : ""}`).join("\n")}`
+      : "";
+    const fullDesc = imageData
+      ? `${desc.trim()}${availBlock}\n\n[BILD:${imageName}]\n${imageData}`
+      : `${desc.trim()}${availBlock}`;
+    const detectedPriority = autoDetectPriority(title.trim(), desc.trim());
+    const now = new Date().toISOString();
     try {
-      const filledSlots = slots.filter(s => s.date && s.time);
-      const availBlock = filledSlots.length > 0
-        ? `\n\n${t("portalAvailability")}:\n${filledSlots.map((s, i) => `  ${i + 1}. ${s.date} ${s.time}${s.note ? ` (${s.note})` : ""}`).join("\n")}`
-        : "";
-      const fullDesc = imageData
-        ? `${desc.trim()}${availBlock}\n\n[BILD:${imageName}]\n${imageData}`
-        : `${desc.trim()}${availBlock}`;
-      const detectedPriority = autoDetectPriority(title.trim(), desc.trim());
       const created = await createTicket({
         title: title.trim(), description: fullDesc,
         unit_id: tenant.unit_id, reporter_name: tenant.name,
         priority: detectedPriority,
       });
-      setConfirmedTicket({ id: (created as { id: number }).id ?? 0, title: title.trim() });
-      resetForm(); onTicketCreated(); setView("confirm");
+      const newTicket: Ticket = {
+        id: (created as { id: number }).id ?? 0,
+        title: title.trim(), description: fullDesc,
+        unit_id: tenant.unit_id, tenant_id: tenant.id,
+        technician_id: undefined, status: "OPEN",
+        priority: detectedPriority, created_at: now, updated_at: now,
+      };
+      const techName = onTicketCreated(newTicket);
+      resetForm(); setConfirmedTicket({ id: newTicket.id, title: newTicket.title, technicianName: techName }); setView("confirm");
     } catch {
-      // Backend offline — simulate successful submission in demo mode
-      setConfirmedTicket({ id: Math.floor(Math.random() * 900) + 100, title: title.trim() });
-      resetForm();
-      onTicketCreated();
-      setView("confirm");
+      // Backend offline — create ticket locally and auto-assign immediately
+      const newId = Math.max(10000, Date.now() % 1000000);
+      const newTicket: Ticket = {
+        id: newId, title: title.trim(), description: fullDesc,
+        unit_id: tenant.unit_id, tenant_id: tenant.id,
+        technician_id: undefined, status: "OPEN",
+        priority: detectedPriority, created_at: now, updated_at: now,
+      };
+      const techName = onTicketCreated(newTicket);
+      resetForm(); setConfirmedTicket({ id: newId, title: title.trim(), technicianName: techName }); setView("confirm");
     } finally {
       setSubmitting(false);
     }
@@ -354,12 +367,12 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
           {[
             [t("portalConfirmTicketNr"), `#${confirmedTicket.id}`],
             ["Titel", confirmedTicket.title],
-            [t("portalConfirmStatus"), t("portalStatusOpen")],
-            [t("portalConfirmTech"), t("portalConfirmTechAuto")],
+            [t("portalConfirmStatus"), t("portalStatusAssigned")],
+            [t("portalConfirmTech"), confirmedTicket.technicianName ?? t("portalConfirmTechAuto")],
           ].map(([k, v]) => (
             <div key={k} className="portal-confirm-row">
               <span>{k}</span>
-              <strong style={{ color: k === t("portalConfirmStatus") ? "var(--accent)" : k === t("portalConfirmTech") ? "var(--text-muted)" : "var(--text-primary)" }}>{v}</strong>
+              <strong style={{ color: k === t("portalConfirmStatus") ? "var(--success)" : "var(--text-primary)" }}>{v}</strong>
             </div>
           ))}
         </div>

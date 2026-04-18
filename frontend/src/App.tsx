@@ -247,7 +247,7 @@ function TenantShell({
   units: Unit[];
   tickets: Ticket[];
   tenants: Tenant[];
-  onTicketCreated: () => void;
+  onTicketCreated: (ticket: Ticket) => string | undefined;
   onExit: () => void;
 }) {
   const { theme, toggle: toggleTheme } = useTheme();
@@ -750,7 +750,13 @@ function App() {
         units={units}
         tickets={tickets}
         tenants={tenants}
-        onTicketCreated={() => loadTickets(filter || undefined)}
+        onTicketCreated={(tk: Ticket) => {
+          const techId = localAutoAssign(tk, technicians, tickets);
+          const tech = technicians.find(tc => tc.id === techId);
+          const assigned: Ticket = { ...tk, technician_id: techId, status: "ASSIGNED", updated_at: new Date().toISOString() };
+          setTickets(prev => [assigned, ...prev]);
+          return tech?.name;
+        }}
         onExit={() => setRole(null)}
       />
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
