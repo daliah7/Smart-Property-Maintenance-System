@@ -7,12 +7,44 @@ const HOURLY_RATE = 80;
 /* ── AI Scheduling helpers ── */
 const PRIORITY_ORDER: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
 const WORK_HOURS: Record<string, number>     = { HIGH: 4, MEDIUM: 2, LOW: 1 };
+const DAY_NAMES = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+
+/** Convert decimal hours (e.g. 12.5) to "HH:MM" */
+function fmtTime(h: number): string {
+  const hrs  = Math.floor(h);
+  const mins = Math.round((h - hrs) * 60);
+  return `${String(hrs).padStart(2,"0")}:${String(mins).padStart(2,"0")}`;
+}
+
+/** Returns the next weekday (skips Sat/Sun) starting from today */
+function nextWeekday(from = new Date()): Date {
+  const d = new Date(from);
+  // If afternoon already over, start tomorrow
+  if (d.getHours() >= 16) d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+function advanceWeekday(d: Date): Date {
+  const next = new Date(d);
+  next.setDate(next.getDate() + 1);
+  while (next.getDay() === 0 || next.getDay() === 6) next.setDate(next.getDate() + 1);
+  return next;
+}
+
+function dayLabel(d: Date): string {
+  return `${DAY_NAMES[d.getDay()]} ${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}`;
+}
 
 interface ScheduleEntry {
-  date: string;       // "Mo 14.04"
-  timeStart: string;  // "08:00"
-  timeEnd: string;    // "12:00"
+  dateLabel: string;
+  dateObj: Date;
+  timeStart: string;
+  timeEnd: string;
+  startH: number;   // decimal for layout
+  endH: number;
   ticket: Ticket;
+  travelAfter: boolean;
 }
 
 function buildSchedule(tickets: Ticket[], techId: number): ScheduleEntry[] {
@@ -22,33 +54,30 @@ function buildSchedule(tickets: Ticket[], techId: number): ScheduleEntry[] {
     .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
 
   const entries: ScheduleEntry[] = [];
-  let day = new Date();
-  // start next weekday morning
-  if (day.getHours() >= 16) day.setDate(day.getDate() + 1);
-  if (day.getDay() === 0) day.setDate(day.getDate() + 1);
-  if (day.getDay() === 6) day.setDate(day.getDate() + 2);
+  let day = nextWeekday();
+  let ptr = 8; // decimal hours from midnight
 
-  let hourPointer = 8; // 08:00
-
-  for (const tk of active) {
-    const h = WORK_HOURS[tk.priority] ?? 2;
-    // If no room left in day (max 8h, i.e. until 16:00) → next day
-    if (hourPointer + h > 16) {
-      day = new Date(day);
-      day.setDate(day.getDate() + 1);
-      if (day.getDay() === 0) day.setDate(day.getDate() + 1);
-      if (day.getDay() === 6) day.setDate(day.getDate() + 2);
-      hourPointer = 8;
+  for (let i = 0; i < active.length; i++) {
+    const tk = active[i];
+    const h  = WORK_HOURS[tk.priority] ?? 2;
+    const TRAVEL = 0.5;
+    // Roll to next day if this task wouldn't fit (end by 17:00)
+    if (ptr + h > 17) {
+      day = advanceWeekday(day);
+      ptr = 8;
     }
-    const dayNames = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-    const label = `${dayNames[day.getDay()]} ${String(day.getDate()).padStart(2,"0")}.${String(day.getMonth()+1).padStart(2,"0")}`;
+    const isLast = i === active.length - 1;
     entries.push({
-      date: label,
-      timeStart: `${String(hourPointer).padStart(2,"0")}:00`,
-      timeEnd:   `${String(hourPointer + h).padStart(2,"0")}:00`,
+      dateLabel: dayLabel(day),
+      dateObj:   new Date(day),
+      timeStart: fmtTime(ptr),
+      timeEnd:   fmtTime(ptr + h),
+      startH: ptr,
+      endH:   ptr + h,
       ticket: tk,
+      travelAfter: !isLast,
     });
-    hourPointer += h + 0.5; // 30 min travel buffer
+    ptr += h + TRAVEL;
   }
   return entries;
 }
@@ -114,42 +143,133 @@ function TechModal({ tech, tickets, onClose }: { tech: Technician; tickets: Tick
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: "auto", padding: 24, background: "var(--bg)" }}>
-          {view === "calendar" && (
-            <>
-              <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: 14 }}>
-                KI-optimierte Reihenfolge: Notfälle zuerst, dann Priorität und Wegoptimierung.
-              </p>
-              {schedule.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                  Keine aktiven Tickets – freier Kalender.
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {schedule.map((entry, i) => (
-                    <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                      <div style={{ textAlign: "right", minWidth: 68, paddingTop: 2 }}>
-                        <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-secondary)" }}>{entry.date}</div>
-                        <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>{entry.timeStart}–{entry.timeEnd}</div>
+          {view === "calendar" && (() => {
+            // Group entries by day
+            const dayGroups: { label: string; dateObj: Date; entries: ScheduleEntry[] }[] = [];
+            for (const e of schedule) {
+              const last = dayGroups[dayGroups.length - 1];
+              if (last && last.label === e.dateLabel) last.entries.push(e);
+              else dayGroups.push({ label: e.dateLabel, dateObj: e.dateObj, entries: [e] });
+            }
+
+            // Week-strip: show Mon–Fri of current week with activity dots
+            const today = new Date();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Monday
+            const weekDays = Array.from({ length: 5 }, (_, i) => {
+              const d = new Date(weekStart);
+              d.setDate(weekStart.getDate() + i);
+              const lbl = dayLabel(d);
+              const count = schedule.filter(e => e.dateLabel === lbl).length;
+              const isToday = d.toDateString() === today.toDateString();
+              return { d, lbl, count, isToday };
+            });
+
+            return (
+              <>
+                {/* Week strip */}
+                <div style={{ display: "flex", gap: 4, marginBottom: 16, background: "var(--bg)", borderRadius: 10, padding: "8px 10px" }}>
+                  {weekDays.map(({ d, lbl, count, isToday }) => (
+                    <div key={lbl} style={{ flex: 1, textAlign: "center" }}>
+                      <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", marginBottom: 3 }}>
+                        {DAY_NAMES[d.getDay()]}
                       </div>
-                      <div style={{ width: 3, background: PRIO_COLOR[entry.ticket.priority], borderRadius: 2, alignSelf: "stretch", flexShrink: 0 }} />
-                      <div style={{ flex: 1, background: "var(--bg)", borderRadius: 8, padding: "8px 12px", border: "1px solid var(--border)" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                          <span style={{ fontSize: "0.67rem", fontWeight: 700, padding: "1px 6px", borderRadius: 8, background: PRIO_COLOR[entry.ticket.priority] + "20", color: PRIO_COLOR[entry.ticket.priority] }}>
-                            {PRIO_LABEL[entry.ticket.priority]}
-                          </span>
-                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>#{entry.ticket.id}</span>
-                        </div>
-                        <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>{entry.ticket.title}</div>
-                        <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", marginTop: 2 }}>
-                          Einheit {entry.ticket.unit_id} · {WORK_HOURS[entry.ticket.priority]}h geplant
-                        </div>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: "50%", margin: "0 auto",
+                        background: isToday ? "var(--accent)" : count > 0 ? "var(--accent)22" : "transparent",
+                        border: isToday ? "none" : count > 0 ? "1px solid var(--accent)55" : "1px solid var(--border)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "0.72rem", fontWeight: 700,
+                        color: isToday ? "#fff" : count > 0 ? "var(--accent)" : "var(--text-muted)",
+                      }}>
+                        {d.getDate()}
                       </div>
+                      {count > 0 && (
+                        <div style={{ display: "flex", justifyContent: "center", gap: 2, marginTop: 3 }}>
+                          {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                            <div key={i} style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--accent)" }} />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
-              )}
-            </>
-          )}
+
+                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: 14 }}>
+                  KI-optimiert: Notfälle zuerst · 30 min Fahrtpuffer · Mo–Fr 08:00–17:00
+                </p>
+
+                {schedule.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "32px 0", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                    Keine aktiven Tickets – freier Kalender.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {dayGroups.map(({ label, entries: dayEntries }) => (
+                      <div key={label}>
+                        {/* Day header */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <div style={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--accent)", background: "var(--accent)15", padding: "2px 10px", borderRadius: 6 }}>
+                            {label}
+                          </div>
+                          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+                          <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                            {dayEntries.reduce((s, e) => s + WORK_HOURS[e.ticket.priority], 0)}h Arbeitszeit
+                          </div>
+                        </div>
+
+                        {/* Day timeline */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                          {dayEntries.map((entry, ei) => (
+                            <div key={ei}>
+                              <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+                                {/* Time column */}
+                                <div style={{ textAlign: "right", minWidth: 76, paddingTop: 4, flexShrink: 0 }}>
+                                  <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-secondary)", fontVariantNumeric: "tabular-nums" }}>
+                                    {entry.timeStart}
+                                  </div>
+                                  <div style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                                    bis {entry.timeEnd}
+                                  </div>
+                                </div>
+                                {/* Priority bar */}
+                                <div style={{ width: 3, background: PRIO_COLOR[entry.ticket.priority], borderRadius: 3, flexShrink: 0, minHeight: 52 }} />
+                                {/* Card */}
+                                <div style={{ flex: 1, background: "var(--bg)", borderRadius: 8, padding: "8px 12px", border: "1px solid var(--border)", marginBottom: 0 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                                    <span style={{ fontSize: "0.65rem", fontWeight: 700, padding: "1px 7px", borderRadius: 8, background: PRIO_COLOR[entry.ticket.priority] + "22", color: PRIO_COLOR[entry.ticket.priority] }}>
+                                      {PRIO_LABEL[entry.ticket.priority]}
+                                    </span>
+                                    <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>#{entry.ticket.id}</span>
+                                    <span style={{ marginLeft: "auto", fontSize: "0.68rem", color: "var(--text-muted)" }}>
+                                      {WORK_HOURS[entry.ticket.priority]}h
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: "0.85rem", fontWeight: 600, lineHeight: 1.3 }}>{entry.ticket.title}</div>
+                                  <div style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: 3 }}>
+                                    Einheit {entry.ticket.unit_id}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Travel buffer indicator */}
+                              {entry.travelAfter && (
+                                <div style={{ display: "flex", gap: 10, alignItems: "center", marginLeft: 86 }}>
+                                  <div style={{ width: 3, background: "var(--border)", flexShrink: 0, alignSelf: "stretch", minHeight: 14 }} />
+                                  <div style={{ fontSize: "0.65rem", color: "var(--text-muted)", padding: "2px 0" }}>
+                                    🚗 30 min Fahrt
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {view === "route" && (
             <>
