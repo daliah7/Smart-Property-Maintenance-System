@@ -560,6 +560,25 @@ const DEMO_TECHNICIANS: Technician[] = [
   { id: 20, name: "Dino Ferrari",      expertise: "Reinigung Hausreinigung Treppenhausreinigung" },
 ];
 
+/* ─── Auto-priority detection (shared with TenantPortal) ─── */
+const HIGH_KW = [
+  "notfall","feuer","brand","gas","gefahr","dringend","sofort","notruf",
+  "rohrbruch","kurzschluss","einbruch","überschwemmung","ausfall","kein wasser",
+  "kein strom","kein gas","ausser betrieb","stecken","sicherheitsrisiko",
+  "verletzt","schimmel","wasser läuft","emergency","danger","urgent","flood",
+  "fire","gas leak","no water","no electricity","strom aus","stromausfall",
+];
+const LOW_KW = [
+  "farbe","anstrich","kratzer","fleck","kosmetisch","routine","streichen",
+  "tapete","dekor","ästhetisch","cosmetic","paint","scratch","esthétique",
+];
+export function autoDetectPriority(title: string, desc: string): "HIGH" | "MEDIUM" | "LOW" {
+  const text = (title + " " + desc).toLowerCase();
+  if (HIGH_KW.some(k => text.includes(k))) return "HIGH";
+  if (LOW_KW.some(k => text.includes(k))) return "LOW";
+  return "MEDIUM";
+}
+
 /* ─── Local auto-assign: skill match + workload (demo mode) ─── */
 function localAutoAssign(ticket: Ticket, techs: Technician[], allTickets: Ticket[]): number {
   const haystack = (ticket.title + " " + ticket.description).toLowerCase();
@@ -631,21 +650,23 @@ function App() {
   }, [filter]);
 
   const handleCreateTicket = async (payload: TicketCreatePayload) => {
+    const priority = payload.priority ?? autoDetectPriority(payload.title, payload.description ?? "");
+    const now = new Date().toISOString();
     if (demoMode) {
       const newId = Math.max(0, ...tickets.map(tk => tk.id)) + 1;
       const newTk: Ticket = {
         id: newId, title: payload.title, description: payload.description,
         unit_id: payload.unit_id, tenant_id: payload.tenant_id,
-        technician_id: undefined, status: "OPEN",
-        priority: payload.priority ?? "MEDIUM",
-        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        technician_id: undefined, status: "OPEN", priority, created_at: now, updated_at: now,
       };
-      setTickets(prev => [newTk, ...prev]);
+      const techId = localAutoAssign(newTk, technicians, tickets);
+      const assigned: Ticket = { ...newTk, technician_id: techId, status: "ASSIGNED", updated_at: now };
+      setTickets(prev => [assigned, ...prev]);
       push("success", t("toastTicketCreated"));
       return;
     }
     try {
-      await createTicket(payload);
+      await createTicket({ ...payload, priority });
       await loadTickets(filter || undefined);
       push("success", t("toastTicketCreated"));
     } catch (err) {

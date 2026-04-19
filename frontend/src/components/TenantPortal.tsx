@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { createTicket } from "../api";
+import { autoDetectPriority } from "../App";
 import { useLanguage } from "../i18n/LanguageContext";
 import type { Ticket, Tenant, Unit } from "../types";
 import { StatusBadge } from "./StatusBadge";
@@ -7,26 +8,6 @@ import { StatusBadge } from "./StatusBadge";
 const SLA_HOURS: Record<string, number> = { HIGH: 24, MEDIUM: 168, LOW: 336 };
 
 /* ─── Auto-Priority Detection ─── */
-const HIGH_KEYWORDS = [
-  "notfall", "feuer", "brand", "gas", "gefahr", "dringend", "sofort", "notruf",
-  "rohrbruch", "kurzschluss", "einbruch", "überschwemmung", "ausfall", "kein wasser",
-  "kein strom", "kein gas", "ausser betrieb", "stecken", "sicherheitsrisiko",
-  "verletzt", "schimmel", "droh", "wasser läuft", "water leak", "emergency",
-  "danger", "urgent", "flood", "fire", "gas leak", "no water", "no electricity",
-  "urgence", "danger", "inondation", "urgenza", "pericolo",
-];
-const LOW_KEYWORDS = [
-  "farbe", "anstrich", "kratzer", "fleck", "kosmetisch", "routine", "streichen",
-  "tapete", "dekor", "ästhetisch", "schönheit", "cosmetic", "paint", "scratch",
-  "routine", "esthétique", "peinture", "cosmétique", "estetico", "pittura",
-];
-
-function autoDetectPriority(title: string, desc: string): "HIGH" | "MEDIUM" | "LOW" {
-  const text = (title + " " + desc).toLowerCase();
-  if (HIGH_KEYWORDS.some(k => text.includes(k))) return "HIGH";
-  if (LOW_KEYWORDS.some(k => text.includes(k))) return "LOW";
-  return "MEDIUM";
-}
 
 function getSLALabel(ticket: Ticket, t: (k: Parameters<ReturnType<typeof useLanguage>["t"]>[0]) => string): { label: string; cls: string } | null {
   if (ticket.status === "RESOLVED" || ticket.status === "CLOSED") return null;

@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { autoDetectPriority } from "../App";
 import { useLanguage } from "../i18n/LanguageContext";
 import type { TicketCreatePayload, TicketPriority, Tenant, Unit } from "../types";
 
@@ -86,6 +87,16 @@ export function TicketForm({ units, tenants, onCreate }: Props) {
             <option value="MEDIUM">{t("priorityMediumOption")}</option>
             <option value="LOW">{t("priorityLowOption")}</option>
           </select>
+          {priority === "" && (title.trim().length >= 3 || description.trim().length >= 5) && (() => {
+            const detected = autoDetectPriority(title, description);
+            const colors: Record<string, string> = { HIGH: "var(--danger)", MEDIUM: "var(--warning)", LOW: "var(--success)" };
+            const labels: Record<string, string> = { HIGH: t("priorityHighOption"), MEDIUM: t("priorityMediumOption"), LOW: t("priorityLowOption") };
+            return (
+              <span style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.78rem", color: colors[detected] }}>
+                🤖 {t("fieldPriorityHint")}: <strong>{labels[detected]}</strong>
+              </span>
+            );
+          })()}
         </label>
         <label className="form-label">
           {t("fieldUnit")}
