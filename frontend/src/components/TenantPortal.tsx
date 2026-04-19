@@ -25,6 +25,26 @@ function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+function parseFirstSlot(description: string): { date: string; time: string } | null {
+  if (!description) return null;
+  const m = description.match(/1\.\s+(\d{4}-\d{2}-\d{2})\s+([^\n(]+)/);
+  if (!m) return null;
+  return { date: m[1].trim(), time: m[2].trim() };
+}
+
+function formatVisitMessage(date: string, time: string, techName?: string): string {
+  const d = new Date(date + "T12:00:00");
+  const formatted = new Intl.DateTimeFormat("de-CH", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  }).format(d);
+  const who = techName ?? "Ihr Techniker";
+  return `${who} wird am ${formatted} zwischen ${time} Uhr bei Ihnen eintreffen.`;
+}
+
+function stripAvailBlock(text: string): string {
+  return (text ?? "").split(/\n\n[\s\S]*?1\. \d{4}/)[0].trim();
+}
+
 function compressImage(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -130,7 +150,7 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
   type View = "menu" | "create" | "list" | "detail" | "confirm" | "reschedule";
   const [view, setView]                     = useState<View>("menu");
   const [detailTicket, setDetailTicket]     = useState<Ticket | null>(null);
-  const [confirmedTicket, setConfirmedTicket] = useState<{ id: number; title: string; technicianName?: string } | null>(null);
+  const [confirmedTicket, setConfirmedTicket] = useState<{ id: number; title: string; technicianName?: string; firstSlot?: { date: string; time: string } } | null>(null);
 
   const [title, setTitle]           = useState("");
   const [desc, setDesc]             = useState("");
@@ -194,7 +214,8 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
         priority: detectedPriority, created_at: now, updated_at: now,
       };
       const techName = onTicketCreated(newTicket);
-      resetForm(); setConfirmedTicket({ id: newTicket.id, title: newTicket.title, technicianName: techName }); setView("confirm");
+      const firstSlot = filledSlots[0] ? { date: filledSlots[0].date, time: filledSlots[0].time } : undefined;
+      resetForm(); setConfirmedTicket({ id: newTicket.id, title: newTicket.title, technicianName: techName, firstSlot }); setView("confirm");
     } catch {
       // Backend offline — create ticket locally and auto-assign immediately
       const newId = Math.max(10000, Date.now() % 1000000);
@@ -205,7 +226,8 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
         priority: detectedPriority, created_at: now, updated_at: now,
       };
       const techName = onTicketCreated(newTicket);
-      resetForm(); setConfirmedTicket({ id: newId, title: title.trim(), technicianName: techName }); setView("confirm");
+      const firstSlot = filledSlots[0] ? { date: filledSlots[0].date, time: filledSlots[0].time } : undefined;
+      resetForm(); setConfirmedTicket({ id: newId, title: title.trim(), technicianName: techName, firstSlot }); setView("confirm");
     } finally {
       setSubmitting(false);
     }
@@ -357,7 +379,11 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
             </div>
           ))}
         </div>
-        <p className="portal-hint" style={{ textAlign: "center" }}>◷ {t("portalConfirmHint")}</p>
+        <div style={{ marginTop: 8, padding: "12px 16px", borderRadius: 10, background: "var(--success-bg, #0a2a1a)", border: "1px solid var(--success)", color: "var(--success)", fontSize: "0.85rem", textAlign: "center", lineHeight: 1.5 }}>
+          {confirmedTicket.firstSlot
+            ? <>📅 {formatVisitMessage(confirmedTicket.firstSlot.date, confirmedTicket.firstSlot.time, confirmedTicket.technicianName)}</>
+            : <>✓ {confirmedTicket.technicianName ?? "Ihr Techniker"} wurde zugewiesen und wird sich in Kürze bei Ihnen melden.</>}
+        </div>
         <div style={{ display: "flex", gap: 10, marginTop: 8, width: "100%" }}>
           <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setView("list")}>{t("portalConfirmShowList")}</button>
           <button className="btn btn-ghost" style={{ flex: 1 }} onClick={() => setView("create")}>{t("portalConfirmNewBtn")}</button>
@@ -416,8 +442,11 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
   if (view === "detail" && detailTicket) {
     const lines = detailTicket.description?.split("\n") ?? [];
     const imageLineIdx = lines.findIndex(l => l.startsWith("[BILD:"));
-    const visibleDesc = imageLineIdx >= 0 ? lines.slice(0, imageLineIdx).join("\n") : detailTicket.description;
+    const rawDesc = imageLineIdx >= 0 ? lines.slice(0, imageLineIdx).join("\n") : detailTicket.description;
+    const visibleDesc = stripAvailBlock(rawDesc ?? "");
     const imgData = imageLineIdx >= 0 ? lines.slice(imageLineIdx + 1).join("\n") : null;
+    const firstSlot = parseFirstSlot(detailTicket.description ?? "");
+    const isActive = detailTicket.status === "ASSIGNED" || detailTicket.status === "IN_PROGRESS";
     return (
       <div className="portal-page">
         <div className="portal-back-row">
@@ -433,6 +462,13 @@ export function TenantPortal({ units, tickets, tenant, onTicketCreated }: Props)
             <StatusBadge status={detailTicket.status} />
           </div>
           <StatusTimeline status={detailTicket.status} labels={statusLabels} />
+          {isActive && (
+            <div style={{ margin: "14px 0", padding: "12px 16px", borderRadius: 10, background: "var(--success-bg, #0a2a1a)", border: "1px solid var(--success)", color: "var(--success)", fontSize: "0.85rem", lineHeight: 1.5 }}>
+              {firstSlot
+                ? <>📅 {formatVisitMessage(firstSlot.date, firstSlot.time)}</>
+                : <>✓ Ihr Techniker wurde zugewiesen und wird sich in Kürze bei Ihnen melden.</>}
+            </div>
+          )}
           {visibleDesc && (
             <div className="portal-detail-section">
               <div className="portal-detail-label">{t("portalDetailDesc")}</div>
