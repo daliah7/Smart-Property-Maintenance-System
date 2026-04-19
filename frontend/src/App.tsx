@@ -652,25 +652,28 @@ function App() {
   const handleCreateTicket = async (payload: TicketCreatePayload) => {
     const priority = payload.priority ?? autoDetectPriority(payload.title, payload.description ?? "");
     const now = new Date().toISOString();
-    if (demoMode) {
-      const newId = Math.max(0, ...tickets.map(tk => tk.id)) + 1;
+
+    const createLocally = (currentTickets: Ticket[]) => {
+      const newId = Math.max(0, ...currentTickets.map(tk => tk.id)) + 1;
       const newTk: Ticket = {
         id: newId, title: payload.title, description: payload.description,
         unit_id: payload.unit_id, tenant_id: payload.tenant_id,
         technician_id: undefined, status: "OPEN", priority, created_at: now, updated_at: now,
       };
-      const techId = localAutoAssign(newTk, technicians, tickets);
+      const techId = localAutoAssign(newTk, technicians, currentTickets);
       const assigned: Ticket = { ...newTk, technician_id: techId, status: "ASSIGNED", updated_at: now };
       setTickets(prev => [assigned, ...prev]);
+      setDemoMode(true);
       push("success", t("toastTicketCreated"));
-      return;
-    }
+    };
+
+    if (demoMode) { createLocally(tickets); return; }
     try {
       await createTicket({ ...payload, priority });
       await loadTickets(filter || undefined);
       push("success", t("toastTicketCreated"));
-    } catch (err) {
-      push("error", `${t("toastTicketCreateError")}: ${err}`);
+    } catch {
+      createLocally(tickets);
     }
   };
 
