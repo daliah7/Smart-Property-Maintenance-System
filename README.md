@@ -1,6 +1,7 @@
 # Smart Property Maintenance System
 
 ![CI](https://github.com/daliah7/Smart-Property-Maintenance-System/actions/workflows/ci.yml/badge.svg)
+![CD](https://github.com/daliah7/Smart-Property-Maintenance-System/actions/workflows/deploy.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688?logo=fastapi&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
@@ -779,7 +780,129 @@ Ein Feature gilt als abgeschlossen wenn:
 
 ---
 
-## 14. Bekannte Limitationen & Erweiterungen
+## 14. Herausforderungen & Lernerfahrungen
+
+Dieser Abschnitt dokumentiert die wichtigsten technischen Herausforderungen während der Entwicklung sowie die daraus resultierenden Architektur- und Designentscheide.
+
+### 14.1 Herausforderung: Backend-Erreichbarkeit (CORS + Render Free Tier)
+
+**Problem:** Das Backend läuft auf Render Free Tier, das nach Inaktivität in den Schlafmodus wechselt (Cold Start ~30–60 s). Das React-Frontend ist auf GitHub Pages gehostet (anderer Origin), was zu CORS-Fehlern führte, sobald Render nicht erreichbar war.
+
+**Lösung – Offline-Demo-Modus:**
+```typescript
+// App.tsx – fetchTickets schlägt fehl → demoMode = true
+const loadTickets = useCallback(async () => {
+  try {
+    const items = await fetchTickets();
+    setTickets(items);
+    setDemoMode(false);
+  } catch {
+    setTickets(DEMO_TICKETS);   // 20 realistische Seed-Tickets
+    setDemoMode(true);           // alle Mutationen arbeiten lokal
+  }
+}, []);
+```
+
+**Lernerfahrung:** Eine robuste Frontend-Architektur muss unabhängig vom Backend präsentierbar sein. Wir haben daraus ein Feature gemacht: Der Demo-Modus erlaubt vollständige Live-Demos ohne Server.
+
+---
+
+### 14.2 Herausforderung: Saubere Schichtentrennung vs. Entwicklungsgeschwindigkeit
+
+**Problem:** Die Clean Architecture mit vier Schichten (Domain → Application → Infrastructure → API) erfordert mehr Boilerplate als ein einfaches CRUD-Framework. In der frühen Entwicklungsphase war die Versuchung gross, direkt auf SQLAlchemy-Models aus den Routers zuzugreifen.
+
+**Lösung – Repository-Pattern mit Protocol-Interfaces:**
+```python
+# application/repositories.py – Framework-agnostisches Interface
+class TicketRepository(Protocol):
+    def get_by_id(self, ticket_id: int) -> MaintenanceTicket | None: ...
+    def save(self, ticket: MaintenanceTicket) -> MaintenanceTicket: ...
+
+# infrastructure/repositories.py – SQLAlchemy-Implementierung
+class SQLAlchemyTicketRepository:
+    def get_by_id(self, ticket_id: int) -> MaintenanceTicket | None:
+        row = self.session.get(TicketModel, ticket_id)
+        return _to_domain(row) if row else None
+```
+
+**Lernerfahrung:** Die initiale Investition in Interfaces zahlt sich im Testing aus: Unit Tests verwenden In-Memory-Repositories und laufen ohne Datenbank in Millisekunden.
+
+---
+
+### 14.3 Herausforderung: AI-gestützte Auto-Zuweisung ohne ML-Modell
+
+**Problem:** Eine echte ML-basierte Techniker-Zuweisung (NLP, Embeddings) wäre für den Zeitrahmen zu aufwändig. Gleichzeitig sollte das System als «AI-assisted» vermarktbar sein und tatsächlich intelligente Entscheide treffen.
+
+**Lösung – Regelbasiertes Scoring mit erklärbarer Logik:**
+```typescript
+// Score = Skill-Match × 3 − aktive Tickets (Auslastung)
+function localAutoAssign(ticket, techs, allTickets): number {
+  const haystack = (ticket.title + " " + ticket.description).toLowerCase();
+  for (const tech of techs) {
+    const skillScore = tech.expertise.toLowerCase()
+      .split(" ").filter(kw => haystack.includes(kw)).length;
+    const load = activeTickets[tech.id] ?? 0;
+    score = skillScore * 3 - load;   // Skills dominieren, Auslastung bricht Gleichstände
+  }
+}
+```
+
+**Lernerfahrung:** Regelbasierte Systeme sind für Enterprise-Kontexte oft besser geeignet als Black-Box-ML: sie sind deterministisch, vollständig testbar und ohne GPU-Kosten. Die Erweiterung auf NLP-Embeddings ist ohne API-Änderung möglich.
+
+---
+
+### 14.4 Herausforderung: Typsicherheit zwischen FastAPI und React
+
+**Problem:** FastAPI generiert zwar OpenAPI-Schemas, aber ohne Code-Generierung entstehen Divergenzen zwischen Python-Pydantic-Schemas und TypeScript-Interfaces — ein häufiger Fehlervektor in Full-Stack-Projekten.
+
+**Lösung – Manuelles Typsystem mit Single Source of Truth:**
+```typescript
+// frontend/src/types.ts – spiegelt exakt die Pydantic-Schemas
+export interface Ticket {
+  id: number;
+  title: string;
+  status: "OPEN" | "ASSIGNED" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+  priority: "HIGH" | "MEDIUM" | "LOW";
+  technician_id?: number;
+  created_at: string;   // ISO-8601, wie FastAPI es serialisiert
+}
+```
+
+**Lernerfahrung:** Für Teams > 2 Personen lohnt sich `openapi-typescript` zur automatischen Generierung dieser Typen. In diesem Projekt war der manuelle Ansatz gut handhabbar und half, die API-Verträge bewusst zu durchdenken.
+
+---
+
+### 14.5 Herausforderung: Mehrsprachigkeit ohne externe Bibliothek
+
+**Problem:** i18n-Bibliotheken wie `i18next` bringen Konfigurationsaufwand. Da das Projekt von Anfang an DE/EN/FR/IT unterstützen sollte, war eine einfache Lösung gefragt.
+
+**Lösung – Eigener Translations-Context:**
+```typescript
+// i18n/translations.ts – typsichere Übersetzungen
+export const translations = { de: { ... }, en: { ... }, fr: { ... }, it: { ... } } as const;
+export type TranslationKey = keyof typeof translations.de;
+
+// Verwendung: t("navDashboard") → TypeScript-Fehler bei falschem Key
+const { t } = useLanguage();
+```
+
+**Lernerfahrung:** Für 4 Sprachen und ~200 Keys ist ein eigener Context wartbar und ohne Bundle-Overhead. TypeScript's `as const` stellt sicher, dass fehlende Übersetzungskeys zur Compile-Zeit auffallen.
+
+---
+
+### 14.6 Einsatz von Coding-Agents: Beobachtungen
+
+| Aspekt | Erfahrung |
+|---|---|
+| **Stärken** | Boilerplate-Code (Routers, CRUD), Test-Scaffolding, Refactoring-Vorschläge, Debugging von TypeScript-Fehlern |
+| **Grenzen** | Domänen-spezifische Business-Logik (z. B. SLA-Eskalation) musste manuell spezifiziert werden; der Agent tendierte zu Over-Engineering |
+| **Workflow** | Spec-First: Anforderung in AGENTS.md dokumentieren → Prompt erstellen → Output reviewen → integrieren |
+| **Qualitätssicherung** | Alle generierten Tests wurden manuell auf False Positives geprüft; Agent-Output wurde nie blind committed |
+| **Zeitersparnis** | Schätzungsweise 40–50 % Entwicklungszeit eingespart bei Infrastruktur- und UI-Code; Business-Logik blieb manuell |
+
+---
+
+## 16. Bekannte Limitationen & Erweiterungen
 
 ### Bewusste Scope-Entscheidungen
 

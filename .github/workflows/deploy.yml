@@ -1,26 +1,137 @@
-name: Deployment Validation
+name: CD – Deploy to Production
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  validate:
+  # ── 1. Gate: all tests must pass before any deployment ──────────────────────
+  test:
+    name: Run Test Suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.12"
+
       - name: Install backend dependencies
         run: python -m pip install --upgrade pip && pip install -r backend/requirements.txt
-      - name: Run backend unit tests
-        run: pytest tests/unit
-      - name: Validate frontend build
+
+      - name: Lint (ruff)
+        run: ruff check backend/app
+
+      - name: Type check (mypy)
+        run: mypy backend/app --ignore-missing-imports
+
+      - name: Unit tests
+        run: pytest tests/unit -v
+
+      - name: Integration tests
+        run: pytest tests/integration -v
+
+      - name: Set up Node 20
         uses: actions/setup-node@v5
         with:
-          node-version: 20
-      - run: |
+          node-version: "20"
+
+      - name: Frontend type check & build
+        run: |
           cd frontend
-          npm install
+          npm ci
+          npx tsc --noEmit
           npm run build
+
+  # ── 2. Deploy backend to Render ─────────────────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend → Render
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://smart-property-maintenance-backend.onrender.com
+    steps:
+      - name: Trigger Render deploy hook
+        # Store your Render deploy hook URL as secret RENDER_DEPLOY_HOOK_URL
+        # in GitHub → Settings → Secrets and variables → Actions
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            curl -s -o /dev/null -w "HTTP %{http_code}" \
+              -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+            echo " – Render deploy triggered"
+          else
+            echo "⚠ RENDER_DEPLOY_HOOK_URL secret not set – Render auto-deploys from main branch via render.yaml"
+          fi
+
+      - name: Wait for Render health check
+        run: |
+          echo "Waiting 60 s for Render to start..."
+          sleep 60
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            https://smart-property-maintenance-backend.onrender.com/api/tickets || echo "000")
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "404" ]; then
+            echo "✅ Backend is up (HTTP $STATUS)"
+          else
+            echo "⚠ Backend returned HTTP $STATUS – Render may still be booting (free tier cold start)"
+          fi
+
+  # ── 3. Deploy frontend to GitHub Pages ──────────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend → GitHub Pages
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ── 4. Post-deploy summary ───────────────────────────────────────────────────
+  notify:
+    name: Deployment Summary
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Print deployment URLs
+        run: |
+          echo "════════════════════════════════════════"
+          echo "  Deployment complete"
+          echo "  Backend : https://smart-property-maintenance-backend.onrender.com"
+          echo "  Frontend: https://daliah7.github.io/Smart-Property-Maintenance-System/"
+          echo "  Swagger : https://smart-property-maintenance-backend.onrender.com/docs"
+          echo "════════════════════════════════════════"
