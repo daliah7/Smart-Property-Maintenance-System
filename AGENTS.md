@@ -246,6 +246,90 @@ Eingesetzt wurde **Claude Sonnet** (claude-sonnet-4) für alle Aufgaben in diese
 
 ---
 
+---
+
+## MCP-Server (Model Context Protocol)
+
+### Übersicht
+
+Als Teil des AI-Integration-Ansatzes wurde ein **FastMCP-Server** (`backend/mcp_server.py`) erstellt, der das SPMS-Backend als MCP-Schnittstelle verfügbar macht. Damit können AI-Assistenten (Claude Desktop, Cursor, etc.) direkt mit dem System interagieren – Tickets abfragen, erstellen und Status-Übergänge durchführen – ohne eigene HTTP-Aufrufe zu schreiben.
+
+### Architektur
+
+```
+AI-Assistent (Claude / Cursor)
+        │  MCP Protocol (stdio / SSE)
+        ▼
+backend/mcp_server.py   ← FastMCP-Server
+        │  httpx HTTP-Calls
+        ▼
+https://smart-property-maintenance-system.onrender.com/api
+        │  FastAPI + SQLAlchemy
+        ▼
+PostgreSQL (Render)
+```
+
+### Tools (14 MCP-Tools)
+
+| Tool | Beschreibung |
+|---|---|
+| `list_tickets(status?)` | Alle Tickets, optional nach Status filtern |
+| `get_ticket(ticket_id)` | Einzelnes Ticket abrufen |
+| `create_ticket(title, description, unit_id, ...)` | Neues Ticket erstellen |
+| `assign_ticket(ticket_id, technician_id)` | Manuell einem Techniker zuweisen |
+| `auto_assign_ticket(ticket_id)` | Automatische Zuweisung per Skill-Scoring |
+| `update_ticket_status(ticket_id, action)` | Status-Übergang: start / resolve / close |
+| `get_ticket_history(ticket_id)` | Audit-Trail eines Tickets |
+| `list_technicians()` | Alle Techniker abrufen |
+| `create_technician(name, expertise)` | Neuen Techniker anlegen |
+| `list_properties()` | Alle Liegenschaften abrufen |
+| `create_property(name, address)` | Neue Liegenschaft anlegen |
+| `list_units(property_id)` | Wohneinheiten einer Liegenschaft |
+| `list_tenants()` | Alle Mieter abrufen |
+
+### Resources (3 MCP-Resources)
+
+| URI | Inhalt |
+|---|---|
+| `spms://tickets/open` | Live-Snapshot aller offenen Tickets |
+| `spms://technicians/all` | Alle Techniker mit Expertise |
+| `spms://dashboard` | Ticket-Zählungen nach Status |
+
+### Verwendung während der Entwicklung
+
+Der MCP-Server wurde eingesetzt, um:
+1. **Testdaten zu generieren** – Claude erstellte über `create_property`, `create_technician` und `create_ticket` reproduzierbare Demo-Daten für das E2E-Testing.
+2. **Ticket-Workflows zu validieren** – Status-Übergänge (OPEN → IN_PROGRESS → RESOLVED → CLOSED) wurden interaktiv über `update_ticket_status` geprüft, ohne das Frontend öffnen zu müssen.
+3. **Auto-Assign-Logik zu testen** – `auto_assign_ticket` wurde mit verschiedenen Techniker-Konstellationen aufgerufen, um die Skill-Scoring-Formel (`skillScore × 3 − activeTickets`) zu verifizieren.
+
+### Prompting-Beispiel
+
+**Prompt:**
+> "Erstelle einen MCP-Server mit FastMCP, der das SPMS-Backend (FastAPI, Endpunkte: /tickets, /technicians, /properties, /tenants) als Tools und Resources exponiert. Verwende httpx für HTTP-Calls, kein direkter DB-Zugriff. Tools sollen vollständige Docstrings mit Args-Dokumentation haben."
+
+**AI-Output:** Vollständiger `mcp_server.py` mit 14 Tools und 3 Resources, korrekten httpx-Aufrufen und FastMCP-Dekoratoren.
+
+**Menschliche Anpassung:**
+- `SPMS_API_URL` Environment-Variable als Override hinzugefügt (für lokales Testing)
+- `update_ticket_status` Action-Validierung ergänzt (ValueError statt HTTP-404)
+- Dashboard-Resource: Fallback `"UNKNOWN"` für fehlende Status-Felder hinzugefügt
+
+### Lokale Ausführung
+
+```bash
+# Server starten (stdio-Transport, für Claude Desktop)
+cd backend
+python mcp_server.py
+
+# Interaktiver Inspector (FastMCP Dev-UI)
+fastmcp dev backend/mcp_server.py
+
+# Mit lokalem Backend
+SPMS_API_URL=http://localhost:8000/api python backend/mcp_server.py
+```
+
+---
+
 ## Lessons Learned
 
 | Beobachtung | Konsequenz |
