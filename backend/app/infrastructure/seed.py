@@ -19,9 +19,84 @@ def _ago(**kwargs) -> datetime:
     return NOW - timedelta(**kwargs)
 
 
+def _patch_seed_data(session) -> None:
+    """Top-up older DB snapshots with missing technicians, invoices and fixed timestamps."""
+    from sqlalchemy import update  # local import avoids circular import at module level
+
+    # 1. Add missing technicians (check by name)
+    existing_names = {t.name for t in session.query(TechnicianModel).all()}
+    candidates = [
+        TechnicianModel(name="Luka Novak",        expertise="Elektrik Strom Kurzschluss Elektroinstallation Sicherung"),
+        TechnicianModel(name="Ivan Horvat",        expertise="Sanitär Heizung Wasser Rohrbruch Wasserrohrbruch Warmwasser"),
+        TechnicianModel(name="Fabien Dupont",      expertise="Schlosserei Türen Fenster Schloss Scharnier Einbruch"),
+        TechnicianModel(name="Marco Bianchi",      expertise="Allgemein Maler Wände Fliesen Renovierung Anstrich"),
+        TechnicianModel(name="Tobias Keller",      expertise="Klimaanlage Lüftung Klimatechnik Belüftung Kühlung Ventilation"),
+        TechnicianModel(name="Marko Kovač",        expertise="Dach Dachdecker Abdichtung Dachrinne Dachschaden Undicht"),
+        TechnicianModel(name="Stéphane Laurent",   expertise="Garten Aussenanlagen Grünfläche Baum Hecke Gehweg Pflaster"),
+        TechnicianModel(name="Reto Amstutz",       expertise="Aufzug Lift Elevator Aufzugswartung Aufzugsanlage"),
+        TechnicianModel(name="Lorenzo Russo",      expertise="Solar Photovoltaik Solaranlage Solarpanel Energie Strom"),
+        TechnicianModel(name="Carlos Ibáñez",      expertise="Maler Farbe Anstrich Tapete Putz Fassade Lackierung"),
+        TechnicianModel(name="Yves Crettenand",    expertise="Boden Parkett Laminat Fliesen Estrich Teppich Bodenbelag"),
+        TechnicianModel(name="Chiara Bernasconi",  expertise="IT Netzwerk Internet WLAN Kabel EDV Haustechnik Smarthome"),
+        TechnicianModel(name="Dominik Frei",       expertise="Brandschutz Feuermelder Sprinkler Feuerlöscher Sicherheit Brand"),
+        TechnicianModel(name="Miguel Delgado",     expertise="Storen Jalousie Rolladen Sonnenschutz Markise Beschattung"),
+        TechnicianModel(name="Hannes Lüthi",       expertise="Schreiner Holz Möbel Einbauschrank Treppe Parkett Holzarbeiten"),
+        TechnicianModel(name="Pierre Maillard",    expertise="Sanitärinstallation Wasserleitung Abfluss Rohr Kanalisation Ventil"),
+        TechnicianModel(name="Giorgio Ferretti",   expertise="Maurer Beton Mauerwerk Risse Abdichtung Keller Fundament"),
+        TechnicianModel(name="Nicole Amstutz",     expertise="Haustechnik Gebäudetechnik Steuerung Automation Pumpe Regelung"),
+        TechnicianModel(name="Alexei Volkov",      expertise="Garage Garagentor Tiefgarage Schranke Parkhaus Tor Motor"),
+        TechnicianModel(name="Dino Ferrari",       expertise="Reinigung Hausreinigung Treppenhausreinigung Desinfektion Pflege"),
+    ]
+    added = [c for c in candidates if c.name not in existing_names]
+    if added:
+        session.add_all(added)
+        session.flush()
+
+    # 2. Fix updated_at for RESOLVED/CLOSED tickets that have updated_at == created_at
+    for ticket in session.query(MaintenanceTicketModel).filter(
+        MaintenanceTicketModel.status.in_(["RESOLVED", "CLOSED"])
+    ).all():
+        if abs((ticket.updated_at - ticket.created_at).total_seconds()) < 60:
+            # Give realistic resolution times based on priority
+            hours = {"HIGH": 48, "MEDIUM": 72, "LOW": 168}.get(ticket.priority, 72)
+            ticket.updated_at = ticket.created_at + timedelta(hours=hours)
+    session.flush()
+
+    # 3. Add more invoices if we only have the initial 2
+    existing_invoice_count = session.query(InvoiceModel).count()
+    if existing_invoice_count < 8:
+        tickets_map = {t.title: t for t in session.query(MaintenanceTicketModel).all()}
+        existing_ticket_ids = {inv.ticket_id for inv in session.query(InvoiceModel).all()}
+        extra_invoices = []
+        candidates_inv = [
+            ("Türschloss defekt — Haupteingang",        Decimal("185.00"), True,  timedelta(days=151), timedelta(days=148)),
+            ("Dachrinne verstopft — Wasserschaden droht", Decimal("320.00"), True, timedelta(days=99),  timedelta(days=96)),
+            ("Lüftungsanlage defekt",                   Decimal("550.00"), False, timedelta(days=130), None),
+            ("Rohrbruch im Badezimmer",                 Decimal("410.00"), True,  timedelta(days=115), timedelta(days=110)),
+            ("Heizungsausfall im Wohnzimmer",           Decimal("240.00"), True,  timedelta(days=193), timedelta(days=190)),
+            ("Stromausfall Küchensteckdose",            Decimal("160.00"), False, timedelta(days=160), None),
+        ]
+        for title, amount, paid, created_delta, paid_delta in candidates_inv:
+            ticket = tickets_map.get(title)
+            if ticket and ticket.id not in existing_ticket_ids:
+                inv = InvoiceModel(
+                    ticket_id=ticket.id, amount=amount, paid=paid,
+                    created_at=NOW - created_delta,
+                    paid_at=(NOW - paid_delta) if paid and paid_delta else None,
+                )
+                extra_invoices.append(inv)
+                existing_ticket_ids.add(ticket.id)
+        if extra_invoices:
+            session.add_all(extra_invoices)
+            session.flush()
+
+    session.commit()
+
+
 def seed_demo_data() -> None:
     with SessionLocal() as session:
         if session.query(PropertyModel).first() is not None:
+            _patch_seed_data(session)
             return
 
         # ── Properties ──────────────────────────────────────────────────
