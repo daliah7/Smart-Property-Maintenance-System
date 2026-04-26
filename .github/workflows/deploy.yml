@@ -56,11 +56,9 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://smart-property-maintenance-backend.onrender.com
+      url: https://smart-property-maintenance-system.onrender.com
     steps:
       - name: Trigger Render deploy hook
-        # Store your Render deploy hook URL as secret RENDER_DEPLOY_HOOK_URL
-        # in GitHub → Settings → Secrets and variables → Actions
         run: |
           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
             curl -s -o /dev/null -w "HTTP %{http_code}" \
@@ -75,7 +73,7 @@ jobs:
           echo "Waiting 60 s for Render to start..."
           sleep 60
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            https://smart-property-maintenance-backend.onrender.com/api/tickets || echo "000")
+            https://smart-property-maintenance-system.onrender.com/api/tickets || echo "000")
           if [ "$STATUS" = "200" ] || [ "$STATUS" = "404" ]; then
             echo "✅ Backend is up (HTTP $STATUS)"
           else
@@ -107,6 +105,8 @@ jobs:
           cd frontend
           npm ci
           npm run build
+        env:
+          VITE_API_URL: https://smart-property-maintenance-system.onrender.com/api
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -131,7 +131,7 @@ jobs:
         run: |
           echo "════════════════════════════════════════"
           echo "  Deployment complete"
-          echo "  Backend : https://smart-property-maintenance-backend.onrender.com"
+          echo "  Backend : https://smart-property-maintenance-system.onrender.com"
           echo "  Frontend: https://daliah7.github.io/Smart-Property-Maintenance-System/"
-          echo "  Swagger : https://smart-property-maintenance-backend.onrender.com/docs"
+          echo "  Swagger : https://smart-property-maintenance-system.onrender.com/docs"
           echo "════════════════════════════════════════"

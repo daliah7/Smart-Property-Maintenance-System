@@ -33,7 +33,7 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_API_URL: https://smart-property-maintenance-backend.onrender.com/api
+          VITE_API_URL: https://smart-property-maintenance-system.onrender.com/api
         run: npm run build
 
       - uses: actions/upload-pages-artifact@v3
